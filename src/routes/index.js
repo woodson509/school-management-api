@@ -276,12 +276,12 @@ router.get(
 /**
  * @route   POST /api/schools
  * @desc    Create a new school
- * @access  Private (Superadmin only)
+ * @access  Private (Superadmin, Admin)
  */
 router.post(
   '/schools',
   authenticate,
-  authorize('superadmin'),
+  authorize('superadmin', 'admin'),
   validateSchool,
   schoolController.createSchool
 );
@@ -313,12 +313,12 @@ router.get(
 /**
  * @route   PUT /api/schools/:id
  * @desc    Update school
- * @access  Private (Superadmin only)
+ * @access  Private (Superadmin, Admin)
  */
 router.put(
   '/schools/:id',
   authenticate,
-  authorize('superadmin'),
+  authorize('superadmin', 'admin'),
   validateUUID('id'),
   validateSchool,
   schoolController.updateSchool
@@ -327,12 +327,12 @@ router.put(
 /**
  * @route   DELETE /api/schools/:id
  * @desc    Delete school
- * @access  Private (Superadmin only)
+ * @access  Private (Superadmin, Admin)
  */
 router.delete(
   '/schools/:id',
   authenticate,
-  authorize('superadmin'),
+  authorize('superadmin', 'admin'),
   validateUUID('id'),
   schoolController.deleteSchool
 );
