@@ -1,0 +1,194 @@
+/**
+ * Validation Utilities
+ * Centralized validation rules using express-validator
+ */
+
+const { body, param, validationResult } = require('express-validator');
+
+/**
+ * Middleware to handle validation errors
+ */
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array().map(err => ({
+        field: err.path || err.param,
+        message: err.msg
+      }))
+    });
+  }
+
+  next();
+};
+
+/**
+ * Validation rules for user registration
+ */
+const validateRegister = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Valid email is required'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
+  body('full_name')
+    .trim()
+    .notEmpty()
+    .withMessage('Full name is required')
+    .isLength({ min: 2, max: 255 })
+    .withMessage('Full name must be between 2 and 255 characters'),
+  body('role')
+    .isIn(['admin', 'teacher', 'student', 'agent', 'superadmin'])
+    .withMessage('Role must be one of: admin, teacher, student, agent, superadmin'),
+  body('school_id')
+    .optional()
+    .isUUID()
+    .withMessage('School ID must be a valid UUID'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for user login
+ */
+const validateLogin = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Valid email is required'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for course creation
+ */
+const validateCourse = [
+  body('title')
+    .trim()
+    .notEmpty()
+    .withMessage('Course title is required')
+    .isLength({ max: 255 })
+    .withMessage('Title must not exceed 255 characters'),
+  body('description')
+    .optional()
+    .trim(),
+  body('code')
+    .trim()
+    .notEmpty()
+    .withMessage('Course code is required')
+    .matches(/^[A-Z0-9-]+$/)
+    .withMessage('Course code must contain only uppercase letters, numbers, and hyphens'),
+  body('credits')
+    .optional()
+    .isInt({ min: 0, max: 20 })
+    .withMessage('Credits must be between 0 and 20'),
+  body('school_id')
+    .isUUID()
+    .withMessage('Valid school ID is required'),
+  body('teacher_id')
+    .optional()
+    .isUUID()
+    .withMessage('Teacher ID must be a valid UUID'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for exam creation
+ */
+const validateExam = [
+  body('course_id')
+    .isUUID()
+    .withMessage('Valid course ID is required'),
+  body('title')
+    .trim()
+    .notEmpty()
+    .withMessage('Exam title is required')
+    .isLength({ max: 255 })
+    .withMessage('Title must not exceed 255 characters'),
+  body('description')
+    .optional()
+    .trim(),
+  body('duration_minutes')
+    .isInt({ min: 1, max: 600 })
+    .withMessage('Duration must be between 1 and 600 minutes'),
+  body('total_marks')
+    .isInt({ min: 1 })
+    .withMessage('Total marks must be at least 1'),
+  body('passing_marks')
+    .isInt({ min: 0 })
+    .withMessage('Passing marks must be at least 0')
+    .custom((value, { req }) => {
+      if (value > req.body.total_marks) {
+        throw new Error('Passing marks cannot exceed total marks');
+      }
+      return true;
+    }),
+  body('exam_date')
+    .optional()
+    .isISO8601()
+    .withMessage('Exam date must be a valid date'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for exam submission
+ */
+const validateExamSubmission = [
+  body('answers')
+    .notEmpty()
+    .withMessage('Answers are required')
+    .isObject()
+    .withMessage('Answers must be a valid JSON object'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for sales record
+ */
+const validateSale = [
+  body('school_id')
+    .isUUID()
+    .withMessage('Valid school ID is required'),
+  body('amount')
+    .isFloat({ min: 0 })
+    .withMessage('Amount must be a positive number'),
+  body('subscription_type')
+    .trim()
+    .notEmpty()
+    .withMessage('Subscription type is required'),
+  body('subscription_months')
+    .isInt({ min: 1, max: 60 })
+    .withMessage('Subscription months must be between 1 and 60'),
+  body('notes')
+    .optional()
+    .trim(),
+  handleValidationErrors
+];
+
+/**
+ * Validation for UUID parameters
+ */
+const validateUUID = (paramName = 'id') => [
+  param(paramName)
+    .isUUID()
+    .withMessage(`${paramName} must be a valid UUID`),
+  handleValidationErrors
+];
+
+module.exports = {
+  validateRegister,
+  validateLogin,
+  validateCourse,
+  validateExam,
+  validateExamSubmission,
+  validateSale,
+  validateUUID,
+  handleValidationErrors
+};
