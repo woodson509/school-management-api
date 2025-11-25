@@ -4,63 +4,34 @@
  */
 
 const { Pool } = require('pg');
-const dns = require('dns');
-const util = require('util');
-const url = require('url');
 require('dotenv').config();
-
-const lookup = util.promisify(dns.lookup);
 
 let pool;
 
 const getPool = async () => {
   if (pool) return pool;
 
-  let config = {
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  };
+  const isProduction = process.env.NODE_ENV === 'production';
+  const connectionString = process.env.DATABASE_URL;
 
-  if (process.env.DATABASE_URL) {
-    try {
-      // Parse URL using standard URL object (handles postgresql:// and postgres://)
-      const dbUrl = new url.URL(process.env.DATABASE_URL);
-      const host = dbUrl.hostname;
-
-      console.log(`Resolving DNS for ${host}...`);
-      // Force IPv4 resolution
-      const { address } = await lookup(host, { family: 4 });
-      console.log(`Resolved ${host} to ${address}`);
-
-      // Update hostname to IP address
-      dbUrl.hostname = address;
-
-      config = {
-        ...config,
-        connectionString: dbUrl.toString(),
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      };
-    } catch (err) {
-      console.error('DNS lookup or URL parsing failed:', err);
-      // Fallback to original URL
-      config = {
-        ...config,
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      };
+  const config = connectionString
+    ? {
+      connectionString,
+      ssl: isProduction ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
     }
-  } else {
-    config = {
-      ...config,
+    : {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 5432,
       database: process.env.DB_NAME || 'school_management',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD,
+      max: 20,
+      idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
     };
-  }
 
   pool = new Pool(config);
 
