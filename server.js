@@ -19,8 +19,8 @@ const PORT = process.env.PORT || 3000;
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',') 
+  origin: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
     : '*',
   credentials: true,
   optionsSuccessStatus: 200
@@ -100,7 +100,7 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Global error handler:', err);
-  
+
   // Handle specific error types
   if (err.name === 'ValidationError') {
     return res.status(400).json({
@@ -109,7 +109,7 @@ app.use((err, req, res, next) => {
       error: err.message
     });
   }
-  
+
   if (err.name === 'UnauthorizedError') {
     return res.status(401).json({
       success: false,
@@ -171,20 +171,22 @@ process.on('uncaughtException', (err) => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Shutting down gracefully...');
-  db.pool.end(() => {
+  if (db.closePool) {
+    await db.closePool();
     console.log('Database pool closed');
-    process.exit(0);
-  });
+  }
+  process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('\nSIGINT received. Shutting down gracefully...');
-  db.pool.end(() => {
+  if (db.closePool) {
+    await db.closePool();
     console.log('Database pool closed');
-    process.exit(0);
-  });
+  }
+  process.exit(0);
 });
 
 // Start the server
