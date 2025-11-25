@@ -4,77 +4,37 @@
  */
 
 const { Pool } = require('pg');
-const dns = require('dns');
-const util = require('util');
 require('dotenv').config();
-
-const lookup = util.promisify(dns.lookup);
 
 let pool;
 
 const getPool = async () => {
   if (pool) return pool;
 
-  let config = {
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  };
+  const isProduction = process.env.NODE_ENV === 'production';
+  const connectionString = process.env.DATABASE_URL;
 
-  if (process.env.DATABASE_URL) {
-    // Parse the connection string
-    // Regex to parse postgres://user:password@host:port/database
-    const match = process.env.DATABASE_URL.match(/postgres:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
-
-    if (match) {
-      const [, user, password, host, port, database] = match;
-
-      // Force IPv4 resolution
-      try {
-        console.log(`Resolving DNS for ${host}...`);
-        const { address } = await lookup(host, { family: 4 });
-        console.log(`Resolved ${host} to ${address}`);
-
-        config = {
-          ...config,
-          user,
-          password: decodeURIComponent(password), // Handle encoded passwords
-          host: address, // Use the resolved IPv4 address
-          port: parseInt(port),
-          database,
-          ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-        };
-      } catch (err) {
-        console.error('DNS lookup failed, falling back to original host:', err);
-        config = {
-          ...config,
-          connectionString: process.env.DATABASE_URL,
-          ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-        };
-      }
-    } else {
-      // If URL parsing fails, use connectionString directly
-      config = {
-        ...config,
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      };
+  const config = connectionString
+    ? {
+      connectionString,
+      ssl: isProduction ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
     }
-  } else {
-    config = {
-      ...config,
+    : {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 5432,
       database: process.env.DB_NAME || 'school_management',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD,
-      connectionTimeoutMillis: 2000, // Shorter timeout for local dev
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
     };
-  }
 
   pool = new Pool(config);
 
-  // Error handling for the pool
   pool.on('error', (err) => {
     console.error('Unexpected database error:', err);
     process.exit(-1);
