@@ -14,6 +14,10 @@ const authController = require('../controllers/authController');
 const courseController = require('../controllers/courseController');
 const examController = require('../controllers/examController');
 const agentController = require('../controllers/agentController');
+const schoolController = require('../controllers/schoolController');
+const userController = require('../controllers/userController');
+const classController = require('../controllers/classController');
+const subjectController = require('../controllers/subjectController');
 
 // Import validators
 const {
@@ -23,7 +27,12 @@ const {
   validateExam,
   validateExamSubmission,
   validateSale,
-  validateUUID
+  validateUUID,
+  validateSchool,
+  validateClass,
+  validateSubject,
+  validateUserUpdate,
+  validatePasswordChange
 } = require('../utils/validation');
 
 // ============================================
@@ -258,6 +267,275 @@ router.get(
   authenticate,
   authorize('agent'),
   agentController.getAgentDashboard
+);
+
+// ============================================
+// SCHOOL ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/schools
+ * @desc    Create a new school
+ * @access  Private (Superadmin only)
+ */
+router.post(
+  '/schools',
+  authenticate,
+  authorize('superadmin'),
+  validateSchool,
+  schoolController.createSchool
+);
+
+/**
+ * @route   GET /api/schools
+ * @desc    Get all schools
+ * @access  Private (Superadmin, Admin)
+ */
+router.get(
+  '/schools',
+  authenticate,
+  authorize('superadmin', 'admin'),
+  schoolController.getSchools
+);
+
+/**
+ * @route   GET /api/schools/:id
+ * @desc    Get school by ID
+ * @access  Private
+ */
+router.get(
+  '/schools/:id',
+  authenticate,
+  validateUUID('id'),
+  schoolController.getSchoolById
+);
+
+/**
+ * @route   PUT /api/schools/:id
+ * @desc    Update school
+ * @access  Private (Superadmin only)
+ */
+router.put(
+  '/schools/:id',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  validateSchool,
+  schoolController.updateSchool
+);
+
+/**
+ * @route   DELETE /api/schools/:id
+ * @desc    Delete school
+ * @access  Private (Superadmin only)
+ */
+router.delete(
+  '/schools/:id',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  schoolController.deleteSchool
+);
+
+// ============================================
+// USER MANAGEMENT ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/users
+ * @desc    Get all users
+ * @access  Private (Admin, Superadmin)
+ */
+router.get(
+  '/users',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  userController.getUsers
+);
+
+/**
+ * @route   GET /api/users/:id
+ * @desc    Get user by ID
+ * @access  Private
+ */
+router.get(
+  '/users/:id',
+  authenticate,
+  validateUUID('id'),
+  userController.getUserById
+);
+
+/**
+ * @route   PUT /api/users/:id
+ * @desc    Update user
+ * @access  Private (Admin, Superadmin, or own profile)
+ */
+router.put(
+  '/users/:id',
+  authenticate,
+  validateUUID('id'),
+  validateUserUpdate,
+  userController.updateUser
+);
+
+/**
+ * @route   DELETE /api/users/:id
+ * @desc    Delete user
+ * @access  Private (Admin, Superadmin)
+ */
+router.delete(
+  '/users/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  userController.deleteUser
+);
+
+/**
+ * @route   PATCH /api/users/:id/password
+ * @desc    Change user password
+ * @access  Private (Admin or own password)
+ */
+router.patch(
+  '/users/:id/password',
+  authenticate,
+  validateUUID('id'),
+  validatePasswordChange,
+  userController.changePassword
+);
+
+// ============================================
+// CLASS ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/classes
+ * @desc    Create a new class
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/classes',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateClass,
+  classController.createClass
+);
+
+/**
+ * @route   GET /api/classes
+ * @desc    Get all classes
+ * @access  Private
+ */
+router.get(
+  '/classes',
+  authenticate,
+  classController.getClasses
+);
+
+/**
+ * @route   GET /api/classes/:id
+ * @desc    Get class by ID
+ * @access  Private
+ */
+router.get(
+  '/classes/:id',
+  authenticate,
+  validateUUID('id'),
+  classController.getClassById
+);
+
+/**
+ * @route   PUT /api/classes/:id
+ * @desc    Update class
+ * @access  Private (Admin, Superadmin)
+ */
+router.put(
+  '/classes/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  validateClass,
+  classController.updateClass
+);
+
+/**
+ * @route   DELETE /api/classes/:id
+ * @desc    Delete class
+ * @access  Private (Admin, Superadmin)
+ */
+router.delete(
+  '/classes/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  classController.deleteClass
+);
+
+// ============================================
+// SUBJECT ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/subjects
+ * @desc    Create a new subject
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/subjects',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateSubject,
+  subjectController.createSubject
+);
+
+/**
+ * @route   GET /api/subjects
+ * @desc    Get all subjects
+ * @access  Private
+ */
+router.get(
+  '/subjects',
+  authenticate,
+  subjectController.getSubjects
+);
+
+/**
+ * @route   GET /api/subjects/:id
+ * @desc    Get subject by ID
+ * @access  Private
+ */
+router.get(
+  '/subjects/:id',
+  authenticate,
+  validateUUID('id'),
+  subjectController.getSubjectById
+);
+
+/**
+ * @route   PUT /api/subjects/:id
+ * @desc    Update subject
+ * @access  Private (Admin, Superadmin)
+ */
+router.put(
+  '/subjects/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  validateSubject,
+  subjectController.updateSubject
+);
+
+/**
+ * @route   DELETE /api/subjects/:id
+ * @desc    Delete subject
+ * @access  Private (Admin, Superadmin)
+ */
+router.delete(
+  '/subjects/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  subjectController.deleteSubject
 );
 
 // ============================================

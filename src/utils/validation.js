@@ -182,6 +182,131 @@ const validateUUID = (paramName = 'id') => [
   handleValidationErrors
 ];
 
+/**
+ * Validation rules for school creation/update
+ */
+const validateSchool = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('School name is required')
+    .isLength({ max: 255 })
+    .withMessage('Name must not exceed 255 characters'),
+  body('address')
+    .trim()
+    .notEmpty()
+    .withMessage('Address is required'),
+  body('phone')
+    .optional()
+    .trim()
+    .matches(/^[0-9\s\-\+\(\)]+$/)
+    .withMessage('Invalid phone number format'),
+  body('email')
+    .optional()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Valid email is required'),
+  body('website')
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage('Valid URL is required'),
+  body('principal_name')
+    .optional()
+    .trim(),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for class creation/update
+ */
+const validateClass = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Class name is required')
+    .isLength({ max: 255 })
+    .withMessage('Name must not exceed 255 characters'),
+  body('grade_level')
+    .trim()
+    .notEmpty()
+    .withMessage('Grade level is required'),
+  body('school_year')
+    .trim()
+    .notEmpty()
+    .withMessage('School year is required')
+    .matches(/^\d{4}-\d{4}$/)
+    .withMessage('School year must be in format YYYY-YYYY (e.g., 2023-2024)'),
+  body('teacher_id')
+    .optional()
+    .isUUID()
+    .withMessage('Teacher ID must be a valid UUID'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for subject creation/update
+ */
+const validateSubject = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Subject name is required')
+    .isLength({ max: 255 })
+    .withMessage('Name must not exceed 255 characters'),
+  body('code')
+    .trim()
+    .notEmpty()
+    .withMessage('Subject code is required')
+    .matches(/^[A-Z0-9-]+$/)
+    .withMessage('Code must contain only uppercase letters, numbers, and hyphens'),
+  body('description')
+    .optional()
+    .trim(),
+  body('credits')
+    .optional()
+    .isInt({ min: 1, max: 10 })
+    .withMessage('Credits must be between 1 and 10'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for user update
+ */
+const validateUserUpdate = [
+  body('full_name')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 255 })
+    .withMessage('Full name must be between 2 and 255 characters'),
+  body('email')
+    .optional()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Valid email is required'),
+  body('role')
+    .optional()
+    .isIn(['admin', 'teacher', 'student', 'agent', 'superadmin'])
+    .withMessage('Role must be one of: admin, teacher, student, agent, superadmin'),
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for password change
+ */
+const validatePasswordChange = [
+  body('currentPassword')
+    .optional()
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long'),
+  handleValidationErrors
+];
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -190,5 +315,11 @@ module.exports = {
   validateExamSubmission,
   validateSale,
   validateUUID,
+  validateSchool,
+  validateClass,
+  validateSubject,
+  validateUserUpdate,
+  validatePasswordChange,
   handleValidationErrors
 };
+
