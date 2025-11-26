@@ -401,6 +401,7 @@ const getAgents = async (req, res) => {
         a.id,
         a.agent_code,
         a.commission_rate,
+        a.phone,
         a.total_sales,
         a.is_active,
         a.created_at,
@@ -658,10 +659,10 @@ const createAgent = async (req, res) => {
 
     // Create agent record
     const agentResult = await client.query(
-      `INSERT INTO agents (user_id, agent_code, commission_rate, total_sales, is_active)
-       VALUES ($1, $2, $3, 0, true)
+      `INSERT INTO agents (user_id, agent_code, commission_rate, total_sales, is_active, phone)
+       VALUES ($1, $2, $3, 0, true, $4)
        RETURNING *`,
-      [user.id, agentCode, commission_rate || 10.0]
+      [user.id, agentCode, commission_rate || 10.0, phone || null]
     );
 
     const agent = agentResult.rows[0];
@@ -814,6 +815,12 @@ const updateAgent = async (req, res) => {
     if (commission_rate !== undefined) {
       agentUpdates.push(`commission_rate = $${agentParamCount}`);
       agentParams.push(commission_rate);
+      agentParamCount++;
+    }
+
+    if (phone !== undefined) {
+      agentUpdates.push(`phone = $${agentParamCount}`);
+      agentParams.push(phone);
       agentParamCount++;
     }
 
