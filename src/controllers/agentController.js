@@ -407,7 +407,6 @@ const getAgents = async (req, res) => {
         u.id as user_id,
         u.full_name,
         u.email,
-        u.phone,
         COUNT(DISTINCT s.id) as total_sales_count,
         COALESCE(SUM(CASE WHEN s.payment_status = 'completed' THEN s.amount ELSE 0 END), 0) as completed_sales_amount,
         COALESCE(SUM(CASE WHEN s.payment_status = 'pending' THEN s.amount ELSE 0 END), 0) as pending_sales_amount,
