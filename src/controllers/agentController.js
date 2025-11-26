@@ -645,10 +645,10 @@ const createAgent = async (req, res) => {
 
     // Create user record
     const userResult = await client.query(
-      `INSERT INTO users (full_name, email, password, phone, role)
-       VALUES ($1, $2, $3, $4, 'agent')
-       RETURNING id, full_name, email, phone, role, created_at`,
-      [full_name, email, hashedPassword, phone || null]
+      `INSERT INTO users (full_name, email, password, role)
+       VALUES ($1, $2, $3, 'agent')
+       RETURNING id, full_name, email, role, created_at`,
+      [full_name, email, hashedPassword]
     );
 
     const user = userResult.rows[0];
