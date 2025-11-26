@@ -28,16 +28,17 @@ exports.createUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const query = `
-            INSERT INTO users (full_name, email, password, role, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, NOW(), NOW())
-            RETURNING id, full_name, email, role, created_at
+            INSERT INTO users (full_name, email, password, role, school_id, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+            RETURNING id, full_name, email, role, school_id, created_at
         `;
 
         const result = await pool.query(query, [
             full_name,
             email,
             hashedPassword,
-            role || 'student'
+            role || 'student',
+            school || null // Assuming 'school' in body is the ID
         ]);
 
         res.status(201).json({
@@ -67,8 +68,9 @@ exports.getUsers = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-      SELECT id, email, full_name, role, created_at, updated_at
-      FROM users
+      SELECT u.id, u.email, u.full_name, u.role, u.school_id, s.name as school_name, u.created_at, u.updated_at
+      FROM users u
+      LEFT JOIN schools s ON u.school_id = s.id
       WHERE 1=1
     `;
 
@@ -76,35 +78,35 @@ exports.getUsers = async (req, res) => {
         let paramIndex = 1;
 
         if (role) {
-            query += ` AND role = $${paramIndex}`;
+            query += ` AND u.role = $${paramIndex}`;
             params.push(role);
             paramIndex++;
         }
 
         if (search) {
-            query += ` AND (full_name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`;
+            query += ` AND (u.full_name ILIKE $${paramIndex} OR u.email ILIKE $${paramIndex})`;
             params.push(`%${search}%`);
             paramIndex++;
         }
 
-        query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        query += ` ORDER BY u.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
         params.push(limit, offset);
 
         const result = await pool.query(query, params);
 
         // Get total count
-        let countQuery = `SELECT COUNT(*) FROM users WHERE 1=1`;
+        let countQuery = `SELECT COUNT(*) FROM users u WHERE 1=1`;
         const countParams = [];
         let countIndex = 1;
 
         if (role) {
-            countQuery += ` AND role = $${countIndex}`;
+            countQuery += ` AND u.role = $${countIndex}`;
             countParams.push(role);
             countIndex++;
         }
 
         if (search) {
-            countQuery += ` AND (full_name ILIKE $${countIndex} OR email ILIKE $${countIndex})`;
+            countQuery += ` AND (u.full_name ILIKE $${countIndex} OR u.email ILIKE $${countIndex})`;
             countParams.push(`%${search}%`);
         }
 
@@ -176,7 +178,7 @@ exports.getUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { full_name, email, role } = req.body;
+        const { full_name, email, role, school_id } = req.body;
         const pool = await db.getPool();
 
         // Check if user is updating their own profile or is admin
@@ -217,6 +219,12 @@ exports.updateUser = async (req, res) => {
         if (role !== undefined && isAdmin) {
             updates.push(`role = $${paramIndex}`);
             params.push(role);
+            paramIndex++;
+        }
+
+        if (school_id !== undefined && isAdmin) {
+            updates.push(`school_id = $${paramIndex}`);
+            params.push(school_id);
             paramIndex++;
         }
 
