@@ -14,6 +14,7 @@ const authController = require('../controllers/authController');
 const courseController = require('../controllers/courseController');
 const examController = require('../controllers/examController');
 const agentController = require('../controllers/agentController');
+const dashboardController = require('../controllers/dashboardController');
 const schoolController = require('../controllers/schoolController');
 const userController = require('../controllers/userController');
 const classController = require('../controllers/classController');
@@ -267,6 +268,134 @@ router.get(
   authenticate,
   authorize('agent'),
   agentController.getAgentDashboard
+);
+
+/**
+ * @route   GET /api/agents
+ * @desc    Get all agents
+ * @access  Private (Superadmin, Admin)
+ */
+router.get(
+  '/agents',
+  authenticate,
+  authorize('superadmin', 'admin'),
+  agentController.getAgents
+);
+
+/**
+ * @route   GET /api/agents/:id
+ * @desc    Get agent by ID
+ * @access  Private (Superadmin, Admin, Own)
+ */
+router.get(
+  '/agents/:id',
+  authenticate,
+  authorize('superadmin', 'admin', 'agent'),
+  validateUUID('id'),
+  agentController.getAgentById
+);
+
+/**
+ * @route   POST /api/agents
+ * @desc    Create a new agent
+ * @access  Private (Superadmin, Admin)
+ */
+router.post(
+  '/agents',
+  authenticate,
+  authorize('superadmin', 'admin'),
+  agentController.createAgent
+);
+
+/**
+ * @route   PUT /api/agents/:id
+ * @desc    Update agent
+ * @access  Private (Superadmin, Admin)
+ */
+router.put(
+  '/agents/:id',
+  authenticate,
+  authorize('superadmin', 'admin'),
+  validateUUID('id'),
+  agentController.updateAgent
+);
+
+/**
+ * @route   DELETE /api/agents/:id
+ * @desc    Delete agent
+ * @access  Private (Superadmin only)
+ */
+router.delete(
+  '/agents/:id',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  agentController.deleteAgent
+);
+
+/**
+ * @route   GET /api/agents/:id/stats
+ * @desc    Get agent statistics
+ * @access  Private (Superadmin, Admin, Own)
+ */
+router.get(
+  '/agents/:id/stats',
+  authenticate,
+  authorize('superadmin', 'admin', 'agent'),
+  validateUUID('id'),
+  agentController.getAgentStats
+);
+
+// ============================================
+// DASHBOARD ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/dashboard/superadmin
+ * @desc    Get superadmin dashboard stats
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/dashboard/superadmin',
+  authenticate,
+  authorize('superadmin'),
+  dashboardController.getSuperAdminDashboard
+);
+
+/**
+ * @route   GET /api/dashboard/admin
+ * @desc    Get admin dashboard stats
+ * @access  Private (Admin only)
+ */
+router.get(
+  '/dashboard/admin',
+  authenticate,
+  authorize('admin'),
+  dashboardController.getAdminDashboard
+);
+
+/**
+ * @route   GET /api/dashboard/teacher
+ * @desc    Get teacher dashboard stats
+ * @access  Private (Teacher only)
+ */
+router.get(
+  '/dashboard/teacher',
+  authenticate,
+  authorize('teacher'),
+  dashboardController.getTeacherDashboard
+);
+
+/**
+ * @route   GET /api/dashboard/student
+ * @desc    Get student dashboard stats
+ * @access  Private (Student only)
+ */
+router.get(
+  '/dashboard/student',
+  authenticate,
+  authorize('student'),
+  dashboardController.getStudentDashboard
 );
 
 // ============================================
