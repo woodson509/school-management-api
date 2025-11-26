@@ -883,49 +883,69 @@ const updateAgent = async (req, res) => {
 };
 
 /**
- * Delete an agent (soft delete - sets is_active to false)
+ * Delete an agent (Hard delete)
  * DELETE /api/agents/:id
  * Access: Admin only
  */
 const deleteAgent = async (req, res) => {
+  const client = await pool.getClient();
+
   try {
     const { id } = req.params;
 
-    // Check if agent exists
-    const checkResult = await pool.query(
-      'SELECT id, is_active FROM agents WHERE id = $1',
+    await client.query('BEGIN');
+
+    // Get agent to find user_id
+    const agentResult = await client.query(
+      'SELECT user_id FROM agents WHERE id = $1',
       [id]
     );
 
-    if (checkResult.rows.length === 0) {
+    if (agentResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({
         success: false,
         message: 'Agent not found'
       });
     }
 
-    // Soft delete - set is_active to false
-    const result = await pool.query(
-      `UPDATE agents 
-       SET is_active = false, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-       RETURNING id, agent_code, is_active`,
-      [id]
-    );
+    const userId = agentResult.rows[0].user_id;
+
+    // Delete agent
+    // Note: This might fail if there are related sales and no CASCADE is set.
+    // In a real app, you might want to keep sales and just nullify the agent_id or keep the agent soft-deleted.
+    // But per user request, we are doing a hard delete.
+    await client.query('DELETE FROM agents WHERE id = $1', [id]);
+
+    // Delete associated user
+    await client.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    await client.query('COMMIT');
 
     res.status(200).json({
       success: true,
-      message: 'Agent deactivated successfully',
-      data: result.rows[0]
+      message: 'Agent deleted successfully'
     });
 
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Delete agent error:', error);
+
+    // Handle foreign key violation (e.g. existing sales)
+    if (error.code === '23503') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete agent because they have associated sales records.'
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Failed to deactivate agent',
+      message: 'Failed to delete agent',
       error: error.message
     });
+  } finally {
+    client.release();
   }
 };
 
