@@ -12,7 +12,7 @@ const bcrypt = require('bcryptjs');
  */
 exports.createUser = async (req, res) => {
     try {
-        const { full_name, email, password, role, school } = req.body;
+        const { full_name, email, password, role, school_id } = req.body;
         const pool = await db.getPool();
 
         // Check if user exists
@@ -38,7 +38,7 @@ exports.createUser = async (req, res) => {
             email,
             hashedPassword,
             role || 'student',
-            school || null // Assuming 'school' in body is the ID
+            school_id || null
         ]);
 
         res.status(201).json({
