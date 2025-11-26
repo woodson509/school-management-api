@@ -471,6 +471,18 @@ router.delete(
 // ============================================
 
 /**
+ * @route   POST /api/users
+ * @desc    Create a new user
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/users',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  userController.createUser
+);
+
+/**
  * @route   GET /api/users
  * @desc    Get all users
  * @access  Private (Admin, Superadmin)

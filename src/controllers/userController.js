@@ -7,6 +7,56 @@ const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 /**
+ * Create a new user
+ * @access Private (admin, superadmin)
+ */
+exports.createUser = async (req, res) => {
+    try {
+        const { full_name, email, password, role, school } = req.body;
+        const pool = await db.getPool();
+
+        // Check if user exists
+        const userCheck = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (userCheck.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'User already exists'
+            });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const query = `
+            INSERT INTO users (full_name, email, password, role, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, NOW(), NOW())
+            RETURNING id, full_name, email, role, created_at
+        `;
+
+        const result = await pool.query(query, [
+            full_name,
+            email,
+            hashedPassword,
+            role || 'student'
+        ]);
+
+        res.status(201).json({
+            success: true,
+            message: 'User created successfully',
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating user',
+            error: error.message
+        });
+    }
+};
+
+/**
  * Get all users
  * @access Private (admin, superadmin)
  */
