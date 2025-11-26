@@ -228,7 +228,7 @@ router.post(
 router.get(
   '/agents/sales',
   authenticate,
-  authorize('agent', 'admin'),
+  authorize('agent', 'admin', 'superadmin'),
   agentController.getSales
 );
 
@@ -240,7 +240,7 @@ router.get(
 router.get(
   '/agents/sales/:id',
   authenticate,
-  authorize('agent', 'admin'),
+  authorize('agent', 'admin', 'superadmin'),
   validateUUID('id'),
   agentController.getSaleById
 );
@@ -253,7 +253,7 @@ router.get(
 router.put(
   '/agents/sales/:id',
   authenticate,
-  authorize('admin'),
+  authorize('admin', 'superadmin'),
   validateUUID('id'),
   agentController.updateSaleStatus
 );
