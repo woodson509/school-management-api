@@ -839,7 +839,7 @@ const updateAgent = async (req, res) => {
 
     // Get updated user info
     const userResult = await client.query(
-      'SELECT id, full_name, email, phone, role FROM users WHERE id = $1',
+      'SELECT id, full_name, email, role FROM users WHERE id = $1',
       [userId]
     );
 
