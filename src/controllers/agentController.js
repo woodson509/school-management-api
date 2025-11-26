@@ -782,12 +782,6 @@ const updateAgent = async (req, res) => {
       userParamCount++;
     }
 
-    if (phone !== undefined) {
-      userUpdates.push(`phone = $${userParamCount}`);
-      userParams.push(phone);
-      userParamCount++;
-    }
-
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
       userUpdates.push(`password = $${userParamCount}`);
@@ -802,7 +796,7 @@ const updateAgent = async (req, res) => {
         UPDATE users 
         SET ${userUpdates.join(', ')}
         WHERE id = $${userParamCount}
-        RETURNING id, full_name, email, phone, role
+        RETURNING id, full_name, email, role
       `;
       await client.query(userQuery, userParams);
     }
