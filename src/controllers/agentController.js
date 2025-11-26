@@ -16,7 +16,7 @@ const bcrypt = require('bcryptjs');
  * Access: Agent only
  */
 const recordSale = async (req, res) => {
-  const client = await pool.connect();
+  const client = await pool.getClient();
 
   try {
     const {
@@ -407,7 +407,6 @@ const getAgents = async (req, res) => {
         u.id as user_id,
         u.full_name,
         u.email,
-        u.phone,
         COUNT(DISTINCT s.id) as total_sales_count,
         COALESCE(SUM(CASE WHEN s.payment_status = 'completed' THEN s.amount ELSE 0 END), 0) as completed_sales_amount,
         COALESCE(SUM(CASE WHEN s.payment_status = 'pending' THEN s.amount ELSE 0 END), 0) as pending_sales_amount,
@@ -598,7 +597,7 @@ const getAgentById = async (req, res) => {
  * Access: Admin only
  */
 const createAgent = async (req, res) => {
-  const client = await pool.connect();
+  const client = await pool.getClient();
 
   try {
     const {
@@ -709,7 +708,7 @@ const createAgent = async (req, res) => {
  * Access: Admin only
  */
 const updateAgent = async (req, res) => {
-  const client = await pool.connect();
+  const client = await pool.getClient();
 
   try {
     const { id } = req.params;
