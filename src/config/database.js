@@ -97,5 +97,6 @@ const getClient = async () => {
 module.exports = {
   query,
   getClient,
+  getPool,
   pool,
 };
