@@ -260,3 +260,42 @@ exports.runActivityLogsMigration = async (req, res) => {
     if (client) client.release();
   }
 };
+
+/**
+ * Run the schools schema update migration
+ * POST /api/migrations/schools-schema
+ */
+exports.runSchoolsSchemaMigration = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('🚀 Starting Schools Schema Migration...');
+
+    // Add missing columns to schools table
+    await client.query(`
+      ALTER TABLE schools 
+      ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS max_students INTEGER DEFAULT 500,
+      ADD COLUMN IF NOT EXISTS max_teachers INTEGER DEFAULT 50;
+    `);
+
+    console.log('✅ Schools Schema Migration Completed Successfully');
+
+    res.json({
+      success: true,
+      message: 'Schools schema migration completed successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};

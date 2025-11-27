@@ -936,6 +936,18 @@ router.post(
   migrationController.runActivityLogsMigration
 );
 
+/**
+ * @route   POST /api/migrations/schools-schema
+ * @desc    Run schools schema migration
+ * @access  Private (Superadmin only)
+ */
+router.post(
+  '/migrations/schools-schema',
+  authenticate,
+  authorize('superadmin'),
+  migrationController.runSchoolsSchemaMigration
+);
+
 // ============================================
 // HEALTH CHECK
 // ============================================
