@@ -198,9 +198,8 @@ const getAdminDashboard = async (req, res) => {
     const coursesStatsQuery = `
       SELECT 
         COUNT(*) as total_courses,
-        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_courses,
-        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_courses,
-        COUNT(CASE WHEN status = 'archived' THEN 1 END) as archived_courses
+        COUNT(CASE WHEN is_active = true THEN 1 END) as active_courses,
+        COUNT(CASE WHEN is_active = false THEN 1 END) as inactive_courses
       FROM courses
       WHERE school_id = $1
     `;
@@ -212,7 +211,7 @@ const getAdminDashboard = async (req, res) => {
       SELECT 
         COUNT(DISTINCT id) as total_exams,
         COUNT(CASE WHEN exam_date > CURRENT_TIMESTAMP THEN 1 END) as upcoming_exams,
-        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_exams
+        COUNT(CASE WHEN is_published = true THEN 1 END) as active_exams
       FROM exams
       WHERE school_id = $1
     `;
@@ -229,7 +228,7 @@ const getAdminDashboard = async (req, res) => {
       SELECT COUNT(*) as total_classes
       FROM classes
       WHERE school_id = $1
-    `;
+      `;
     let classesStats = { total_classes: 0 };
     try {
       const classesStatsResult = await pool.query(classesStatsQuery, [schoolId]);
@@ -242,13 +241,13 @@ const getAdminDashboard = async (req, res) => {
     let recentActivity = [];
     try {
       const activityQuery = `
-        SELECT 
-          id,
-          action,
-          user_email,
-          created_at
+    SELECT
+    id,
+      action,
+      user_email,
+      created_at
         FROM activity_logs
-        WHERE details->>'school_id' = $1 OR user_email IN (SELECT email FROM users WHERE school_id = $1)
+        WHERE details ->> 'school_id' = $1 OR user_email IN(SELECT email FROM users WHERE school_id = $1)
         ORDER BY created_at DESC
         LIMIT 5
       `;
@@ -262,13 +261,13 @@ const getAdminDashboard = async (req, res) => {
     let upcomingExams = [];
     try {
       const upcomingExamsQuery = `
-        SELECT 
-          e.id,
-          e.title,
-          e.exam_date,
-          c.name as course_name,
-          c.code as course_code,
-          (SELECT COUNT(*) FROM enrollments en WHERE en.course_id = e.course_id) as student_count
+    SELECT
+    e.id,
+      e.title,
+      e.exam_date,
+      c.name as course_name,
+      c.code as course_code,
+      (SELECT COUNT(*) FROM enrollments en WHERE en.course_id = e.course_id) as student_count
         FROM exams e
         LEFT JOIN courses c ON e.course_id = c.id
         WHERE e.school_id = $1 AND e.exam_date > CURRENT_TIMESTAMP
@@ -343,28 +342,28 @@ const getTeacherDashboard = async (req, res) => {
 
     // My courses statistics
     const coursesStatsQuery = `
-      SELECT 
-        COUNT(*) as total_courses,
-        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_courses,
-        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_courses
+    SELECT
+    COUNT(*) as total_courses,
+      COUNT(CASE WHEN status = 'active' THEN 1 END) as active_courses,
+      COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_courses
       FROM courses
       WHERE teacher_id = $1
-    `;
+      `;
     const coursesStatsResult = await pool.query(coursesStatsQuery, [userId]);
     const coursesStats = coursesStatsResult.rows[0];
 
     // My exams statistics (last 30 days)
     const examsStatsQuery = `
-      SELECT 
-        COUNT(DISTINCT e.id) as total_exams,
-        COUNT(DISTINCT ea.id) as total_attempts,
-        COALESCE(AVG(ea.score), 0) as average_score,
-        COUNT(CASE WHEN ea.status = 'completed' AND ea.graded = false THEN 1 END) as pending_grading
+    SELECT
+    COUNT(DISTINCT e.id) as total_exams,
+      COUNT(DISTINCT ea.id) as total_attempts,
+      COALESCE(AVG(ea.score), 0) as average_score,
+      COUNT(CASE WHEN ea.status = 'completed' AND ea.graded = false THEN 1 END) as pending_grading
       FROM exams e
       LEFT JOIN exam_attempts ea ON e.id = ea.exam_id
       WHERE e.teacher_id = $1
         AND e.created_at >= CURRENT_DATE - INTERVAL '30 days'
-    `;
+      `;
     const examsStatsResult = await pool.query(examsStatsQuery, [userId]);
     const examsStats = examsStatsResult.rows[0];
 
@@ -374,22 +373,22 @@ const getTeacherDashboard = async (req, res) => {
       FROM enrollments e
       JOIN courses c ON e.course_id = c.id
       WHERE c.teacher_id = $1
-    `;
+      `;
     const studentsCountResult = await pool.query(studentsCountQuery, [userId]);
     const studentsCount = studentsCountResult.rows[0].total_students;
 
     // Upcoming exams (next 5)
     const upcomingExamsQuery = `
-      SELECT 
-        e.id,
-        e.title,
-        e.description,
-        e.start_date,
-        e.end_date,
-        e.duration_minutes,
-        e.total_points,
-        c.title as course_title,
-        COUNT(ea.id) as attempts_count
+    SELECT
+    e.id,
+      e.title,
+      e.description,
+      e.start_date,
+      e.end_date,
+      e.duration_minutes,
+      e.total_points,
+      c.title as course_title,
+      COUNT(ea.id) as attempts_count
       FROM exams e
       JOIN courses c ON e.course_id = c.id
       LEFT JOIN exam_attempts ea ON e.id = ea.exam_id
@@ -398,20 +397,20 @@ const getTeacherDashboard = async (req, res) => {
       GROUP BY e.id, c.id
       ORDER BY e.start_date ASC
       LIMIT 5
-    `;
+      `;
     const upcomingExamsResult = await pool.query(upcomingExamsQuery, [userId]);
 
     // Recent grading needed (last 10 to grade)
     const gradingNeededQuery = `
-      SELECT 
-        ea.id,
-        ea.score,
-        ea.status,
-        ea.submitted_at,
-        e.title as exam_title,
-        e.total_points,
-        u.full_name as student_name,
-        c.title as course_title
+    SELECT
+    ea.id,
+      ea.score,
+      ea.status,
+      ea.submitted_at,
+      e.title as exam_title,
+      e.total_points,
+      u.full_name as student_name,
+      c.title as course_title
       FROM exam_attempts ea
       JOIN exams e ON ea.exam_id = e.id
       JOIN users u ON ea.student_id = u.id
@@ -421,7 +420,7 @@ const getTeacherDashboard = async (req, res) => {
         AND ea.graded = false
       ORDER BY ea.submitted_at ASC
       LIMIT 10
-    `;
+      `;
     const gradingNeededResult = await pool.query(gradingNeededQuery, [userId]);
 
     res.status(200).json({
@@ -468,44 +467,44 @@ const getStudentDashboard = async (req, res) => {
 
     // My courses statistics
     const coursesStatsQuery = `
-      SELECT 
-        COUNT(*) as total_enrolled,
-        COUNT(CASE WHEN c.status = 'active' THEN 1 END) as active_courses,
-        COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_courses
+    SELECT
+    COUNT(*) as total_enrolled,
+      COUNT(CASE WHEN c.status = 'active' THEN 1 END) as active_courses,
+      COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_courses
       FROM enrollments e
       JOIN courses c ON e.course_id = c.id
       WHERE e.student_id = $1
-    `;
+      `;
     const coursesStatsResult = await pool.query(coursesStatsQuery, [userId]);
     const coursesStats = coursesStatsResult.rows[0];
 
     // My exam statistics
     const examsStatsQuery = `
-      SELECT 
-        COUNT(DISTINCT ea.exam_id) as total_exams_taken,
-        COUNT(*) as total_attempts,
-        COALESCE(AVG(ea.score), 0) as average_score,
-        COUNT(CASE WHEN ea.status = 'completed' THEN 1 END) as completed_attempts,
-        COUNT(CASE WHEN ea.status = 'in_progress' THEN 1 END) as in_progress_attempts
+    SELECT
+    COUNT(DISTINCT ea.exam_id) as total_exams_taken,
+      COUNT(*) as total_attempts,
+      COALESCE(AVG(ea.score), 0) as average_score,
+      COUNT(CASE WHEN ea.status = 'completed' THEN 1 END) as completed_attempts,
+      COUNT(CASE WHEN ea.status = 'in_progress' THEN 1 END) as in_progress_attempts
       FROM exam_attempts ea
       WHERE ea.student_id = $1
-    `;
+      `;
     const examsStatsResult = await pool.query(examsStatsQuery, [userId]);
     const examsStats = examsStatsResult.rows[0];
 
     // Upcoming exams (next 5)
     const upcomingExamsQuery = `
       SELECT DISTINCT
-        e.id,
-        e.title,
-        e.description,
-        e.start_date,
-        e.end_date,
-        e.duration_minutes,
-        e.total_points,
-        c.title as course_title,
-        u.full_name as teacher_name,
-        (SELECT COUNT(*) FROM exam_attempts WHERE exam_id = e.id AND student_id = $1) as my_attempts
+    e.id,
+      e.title,
+      e.description,
+      e.start_date,
+      e.end_date,
+      e.duration_minutes,
+      e.total_points,
+      c.title as course_title,
+      u.full_name as teacher_name,
+      (SELECT COUNT(*) FROM exam_attempts WHERE exam_id = e.id AND student_id = $1) as my_attempts
       FROM exams e
       JOIN courses c ON e.course_id = c.id
       JOIN users u ON c.teacher_id = u.id
@@ -515,23 +514,23 @@ const getStudentDashboard = async (req, res) => {
         AND e.end_date >= CURRENT_TIMESTAMP
       ORDER BY e.start_date ASC
       LIMIT 5
-    `;
+      `;
     const upcomingExamsResult = await pool.query(upcomingExamsQuery, [userId]);
 
     // Recent grades (last 10)
     let recentGrades = [];
     try {
       const gradesQuery = `
-        SELECT 
-          g.id,
-          g.grade,
-          g.points_earned,
-          g.points_possible,
-          g.feedback,
-          g.graded_at,
-          c.title as course_title,
-          e.title as exam_title,
-          u.full_name as teacher_name
+    SELECT
+    g.id,
+      g.grade,
+      g.points_earned,
+      g.points_possible,
+      g.feedback,
+      g.graded_at,
+      c.title as course_title,
+      e.title as exam_title,
+      u.full_name as teacher_name
         FROM grades g
         JOIN courses c ON g.course_id = c.id
         JOIN exams e ON g.exam_id = e.id
@@ -545,15 +544,15 @@ const getStudentDashboard = async (req, res) => {
     } catch (err) {
       // Table might not exist, try with exam_attempts
       const attemptsQuery = `
-        SELECT 
-          ea.id,
-          ea.score as grade,
-          ea.score as points_earned,
-          e.total_points as points_possible,
-          ea.submitted_at as graded_at,
-          c.title as course_title,
-          e.title as exam_title,
-          u.full_name as teacher_name
+    SELECT
+    ea.id,
+      ea.score as grade,
+      ea.score as points_earned,
+      e.total_points as points_possible,
+      ea.submitted_at as graded_at,
+      c.title as course_title,
+      e.title as exam_title,
+      u.full_name as teacher_name
         FROM exam_attempts ea
         JOIN exams e ON ea.exam_id = e.id
         JOIN courses c ON e.course_id = c.id
@@ -571,9 +570,9 @@ const getStudentDashboard = async (req, res) => {
     let attendanceRate = null;
     try {
       const attendanceQuery = `
-        SELECT 
-          COUNT(*) as total_records,
-          COUNT(CASE WHEN status = 'present' THEN 1 END) as present_count
+    SELECT
+    COUNT(*) as total_records,
+      COUNT(CASE WHEN status = 'present' THEN 1 END) as present_count
         FROM attendance
         WHERE student_id = $1
           AND date >= CURRENT_DATE - INTERVAL '30 days'
