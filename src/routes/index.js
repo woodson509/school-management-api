@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Import middleware
 const { authenticate, authorize, optionalAuth } = require('../middleware/auth');
+const { logActivity } = require('../middleware/loggingMiddleware');
 
 // Import controllers
 const authController = require('../controllers/authController');
@@ -21,6 +22,7 @@ const classController = require('../controllers/classController');
 const subjectController = require('../controllers/subjectController');
 const roleController = require('../controllers/roleController');
 const migrationController = require('../controllers/migrationController');
+const logController = require('../controllers/logController');
 
 // Import validators
 const {
@@ -37,6 +39,9 @@ const {
   validateUserUpdate,
   validatePasswordChange
 } = require('../utils/validation');
+
+// Apply global logging middleware
+router.use(logActivity);
 
 // ============================================
 // PUBLIC ROUTES (No authentication required)
@@ -784,6 +789,58 @@ router.put(
   authorize('superadmin'),
   validateUUID('id'),
   roleController.updateRolePermissions
+);
+
+// ============================================
+// ACTIVITY LOGS ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/logs
+ * @desc    Get all activity logs
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/logs',
+  authenticate,
+  authorize('superadmin'),
+  logController.getAllLogs
+);
+
+/**
+ * @route   GET /api/logs/stats
+ * @desc    Get activity log statistics
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/logs/stats',
+  authenticate,
+  authorize('superadmin'),
+  logController.getLogStats
+);
+
+/**
+ * @route   GET /api/logs/export
+ * @desc    Export activity logs as CSV
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/logs/export',
+  authenticate,
+  authorize('superadmin'),
+  logController.exportLogs
+);
+
+/**
+ * @route   GET /api/logs/:id
+ * @desc    Get single activity log
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/logs/:id',
+  authenticate,
+  authorize('superadmin'),
+  logController.getLogById
 );
 
 // ============================================
