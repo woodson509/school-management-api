@@ -99,37 +99,43 @@ const createCourse = async (req, res) => {
 const getCourses = async (req, res) => {
   try {
     const { school_id, teacher_id, is_active } = req.query;
-    
-    let query = 'SELECT * FROM courses WHERE 1=1';
+
+    let query = `
+      SELECT c.*, u.full_name as teacher_name, s.name as school_name
+      FROM courses c
+      LEFT JOIN users u ON c.teacher_id = u.id
+      LEFT JOIN schools s ON c.school_id = s.id
+      WHERE 1=1
+    `;
     const params = [];
     let paramCount = 1;
 
     // Apply filters
     if (school_id) {
-      query += ` AND school_id = $${paramCount}`;
+      query += ` AND c.school_id = $${paramCount}`;
       params.push(school_id);
       paramCount++;
     }
 
     if (teacher_id) {
-      query += ` AND teacher_id = $${paramCount}`;
+      query += ` AND c.teacher_id = $${paramCount}`;
       params.push(teacher_id);
       paramCount++;
     }
 
     if (is_active !== undefined) {
-      query += ` AND is_active = $${paramCount}`;
+      query += ` AND c.is_active = $${paramCount}`;
       params.push(is_active === 'true');
       paramCount++;
     }
 
     // Students and teachers see only their school's courses
     if (req.user.role === 'student' || req.user.role === 'teacher') {
-      query += ` AND school_id = $${paramCount}`;
+      query += ` AND c.school_id = $${paramCount}`;
       params.push(req.user.school_id);
     }
 
-    query += ' ORDER BY created_at DESC';
+    query += ' ORDER BY c.created_at DESC';
 
     const result = await db.query(query, params);
 
@@ -176,8 +182,8 @@ const getCourseById = async (req, res) => {
     const course = result.rows[0];
 
     // Authorization check - students/teachers can only view their school's courses
-    if ((req.user.role === 'student' || req.user.role === 'teacher') 
-        && course.school_id !== req.user.school_id) {
+    if ((req.user.role === 'student' || req.user.role === 'teacher')
+      && course.school_id !== req.user.school_id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

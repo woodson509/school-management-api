@@ -912,6 +912,16 @@ router.get(
 // MIGRATION ROUTES
 // ============================================
 
+// Grade routes
+const gradeController = require('../controllers/gradeController');
+const examController = require('../controllers/examController');
+
+router.get('/grades', authenticate, authorize('admin', 'teacher'), gradeController.getAllGrades);
+router.get('/exams/:id/attempts', authenticate, authorize('admin', 'teacher'), examController.getExamAttempts);
+router.put('/exams/:id', authenticate, authorize('admin', 'teacher'), examController.updateExam);
+router.delete('/exams/:id', authenticate, authorize('admin', 'teacher'), examController.deleteExam);
+router.put('/grades/:id', authenticate, authorize('admin', 'teacher'), gradeController.updateGrade);
+
 /**
  * @route   POST /api/migrations/roles
  * @desc    Run roles system migration

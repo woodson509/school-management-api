@@ -92,7 +92,7 @@ const createExam = async (req, res) => {
 const getExams = async (req, res) => {
   try {
     const { course_id, is_published } = req.query;
-    
+
     let query = `
       SELECT e.*, c.title as course_title, c.code as course_code,
              u.full_name as created_by_name
@@ -253,7 +253,7 @@ const startExam = async (req, res) => {
 
     if (attemptCheck.rows.length > 0) {
       const existingAttempt = attemptCheck.rows[0];
-      
+
       if (existingAttempt.status === 'in_progress') {
         return res.status(409).json({
           success: false,
@@ -261,7 +261,7 @@ const startExam = async (req, res) => {
           data: existingAttempt
         });
       }
-      
+
       if (existingAttempt.status === 'submitted' || existingAttempt.status === 'graded') {
         return res.status(409).json({
           success: false,
@@ -438,11 +438,166 @@ const getExamAttempts = async (req, res) => {
   }
 };
 
+/**
+ * Update exam
+ * PUT /api/exams/:id
+ * Access: Admin, Teacher (own courses)
+ */
+const updateExam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      course_id,
+      title,
+      description,
+      duration_minutes,
+      total_marks,
+      passing_marks,
+      exam_date,
+      is_published
+    } = req.body;
+
+    // Verify exam exists
+    const examCheck = await db.query(
+      `SELECT e.*, c.teacher_id, c.school_id
+       FROM exams e
+       JOIN courses c ON e.course_id = c.id
+       WHERE e.id = $1`,
+      [id]
+    );
+
+    if (examCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Exam not found'
+      });
+    }
+
+    const exam = examCheck.rows[0];
+
+    // Authorization check
+    if (req.user.role === 'teacher' && exam.teacher_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only update exams for your own courses'
+      });
+    }
+
+    if (exam.school_id !== req.user.school_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    // Update exam
+    const result = await db.query(
+      `UPDATE exams
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           duration_minutes = COALESCE($3, duration_minutes),
+           total_marks = COALESCE($4, total_marks),
+           passing_marks = COALESCE($5, passing_marks),
+           exam_date = COALESCE($6, exam_date),
+           is_published = COALESCE($7, is_published),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $8
+       RETURNING *`,
+      [
+        title || null,
+        description || null,
+        duration_minutes || null,
+        total_marks || null,
+        passing_marks || null,
+        exam_date || null,
+        is_published !== undefined ? is_published : null,
+        id
+      ]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Exam updated successfully',
+      data: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Update exam error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update exam',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete exam
+ * DELETE /api/exams/:id
+ * Access: Admin, Teacher (own courses)
+ */
+const deleteExam = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify exam exists
+    const examCheck = await db.query(
+      `SELECT e.*, c.teacher_id, c.school_id
+       FROM exams e
+       JOIN courses c ON e.course_id = c.id
+       WHERE e.id = $1`,
+      [id]
+    );
+
+    if (examCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Exam not found'
+      });
+    }
+
+    const exam = examCheck.rows[0];
+
+    // Authorization check
+    if (req.user.role === 'teacher' && exam.teacher_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete exams for your own courses'
+      });
+    }
+
+    if (exam.school_id !== req.user.school_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    // Delete exam (this will also cascade delete exam_attempts if set up)
+    await db.query('DELETE FROM exams WHERE id = $1', [id]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Exam deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete exam error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete exam',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createExam,
   getExams,
   getExamById,
   startExam,
   submitExam,
-  getExamAttempts
+  getExamAttempts,
+  updateExam,
+  deleteExam
 };
