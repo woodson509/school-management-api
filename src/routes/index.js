@@ -23,6 +23,7 @@ const subjectController = require('../controllers/subjectController');
 const roleController = require('../controllers/roleController');
 const migrationController = require('../controllers/migrationController');
 const logController = require('../controllers/logController');
+const backupController = require('../controllers/backupController');
 
 // Import validators
 const {
@@ -789,6 +790,70 @@ router.put(
   authorize('superadmin'),
   validateUUID('id'),
   roleController.updateRolePermissions
+);
+
+// ============================================
+// BACKUP ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/backups
+ * @desc    Create manual database backup
+ * @access  Private (Superadmin only)
+ */
+router.post(
+  '/backups',
+  authenticate,
+  authorize('superadmin'),
+  backupController.createBackup
+);
+
+/**
+ * @route   GET /api/backups
+ * @desc    Get all backups
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/backups',
+  authenticate,
+  authorize('superadmin'),
+  backupController.getAllBackups
+);
+
+/**
+ * @route   GET /api/backups/stats
+ * @desc    Get backup storage statistics
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/backups/stats',
+  authenticate,
+  authorize('superadmin'),
+  backupController.getBackupStats
+);
+
+/**
+ * @route   GET /api/backups/:filename/download
+ * @desc    Download backup file
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/backups/:filename/download',
+  authenticate,
+  authorize('superadmin'),
+  backupController.downloadBackup
+);
+
+/**
+ * @route   DELETE /api/backups/:filename
+ * @desc    Delete backup file
+ * @access  Private (Superadmin only)
+ */
+router.delete(
+  '/backups/:filename',
+  authenticate,
+  authorize('superadmin'),
+  backupController.deleteBackup
 );
 
 // ============================================
