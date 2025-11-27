@@ -20,6 +20,7 @@ const userController = require('../controllers/userController');
 const classController = require('../controllers/classController');
 const subjectController = require('../controllers/subjectController');
 const roleController = require('../controllers/roleController');
+const migrationController = require('../controllers/migrationController');
 
 // Import validators
 const {
@@ -783,6 +784,22 @@ router.put(
   authorize('superadmin'),
   validateUUID('id'),
   roleController.updateRolePermissions
+);
+
+// ============================================
+// MIGRATION ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/migrations/roles
+ * @desc    Run roles system migration
+ * @access  Private (Superadmin only)
+ */
+router.post(
+  '/migrations/roles',
+  authenticate,
+  authorize('superadmin'),
+  migrationController.runRolesMigration
 );
 
 // ============================================
