@@ -859,6 +859,18 @@ router.post(
   migrationController.runRolesMigration
 );
 
+/**
+ * @route   POST /api/migrations/activity-logs
+ * @desc    Run activity logs migration
+ * @access  Private (Superadmin only)
+ */
+router.post(
+  '/migrations/activity-logs',
+  authenticate,
+  authorize('superadmin'),
+  migrationController.runActivityLogsMigration
+);
+
 // ============================================
 // HEALTH CHECK
 // ============================================
