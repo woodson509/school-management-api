@@ -24,6 +24,13 @@ exports.createUser = async (req, res) => {
             });
         }
 
+        // Determine school_id based on creator's role
+        let targetSchoolId = school_id;
+        if (req.user.role === 'admin') {
+            // Admins can only create users for their own school
+            targetSchoolId = req.user.school_id;
+        }
+
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -38,7 +45,7 @@ exports.createUser = async (req, res) => {
             email,
             hashedPassword,
             role || 'student',
-            school_id || null
+            targetSchoolId || null
         ]);
 
         res.status(201).json({
@@ -77,6 +84,13 @@ exports.getUsers = async (req, res) => {
         const params = [];
         let paramIndex = 1;
 
+        // Enforce school isolation for admins
+        if (req.user.role === 'admin') {
+            query += ` AND u.school_id = $${paramIndex}`;
+            params.push(req.user.school_id);
+            paramIndex++;
+        }
+
         if (role) {
             query += ` AND u.role = $${paramIndex}`;
             params.push(role);
@@ -99,6 +113,13 @@ exports.getUsers = async (req, res) => {
         const countParams = [];
         let countIndex = 1;
 
+        // Enforce school isolation for count query too
+        if (req.user.role === 'admin') {
+            countQuery += ` AND u.school_id = $${countIndex}`;
+            countParams.push(req.user.school_id);
+            countIndex++;
+        }
+
         if (role) {
             countQuery += ` AND u.role = $${countIndex}`;
             countParams.push(role);
@@ -108,6 +129,7 @@ exports.getUsers = async (req, res) => {
         if (search) {
             countQuery += ` AND (u.full_name ILIKE $${countIndex} OR u.email ILIKE $${countIndex})`;
             countParams.push(`%${search}%`);
+            countIndex++;
         }
 
         const countResult = await pool.query(countQuery, countParams);
