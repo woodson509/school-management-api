@@ -19,6 +19,7 @@ const schoolController = require('../controllers/schoolController');
 const userController = require('../controllers/userController');
 const classController = require('../controllers/classController');
 const subjectController = require('../controllers/subjectController');
+const roleController = require('../controllers/roleController');
 
 // Import validators
 const {
@@ -677,6 +678,111 @@ router.delete(
   authorize('admin', 'superadmin'),
   validateUUID('id'),
   subjectController.deleteSubject
+);
+
+// ============================================
+// ROLE & PERMISSION ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/roles
+ * @desc    Get all roles with stats
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/roles',
+  authenticate,
+  authorize('superadmin'),
+  roleController.getAllRoles
+);
+
+/**
+ * @route   GET /api/roles/:id
+ * @desc    Get role by ID with permissions
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/roles/:id',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  roleController.getRoleById
+);
+
+/**
+ * @route   POST /api/roles
+ * @desc    Create new role
+ * @access  Private (Superadmin only)
+ */
+router.post(
+  '/roles',
+  authenticate,
+  authorize('superadmin'),
+  roleController.createRole
+);
+
+/**
+ * @route   PUT /api/roles/:id
+ * @desc    Update role
+ * @access  Private (Superadmin only)
+ */
+router.put(
+  '/roles/:id',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  roleController.updateRole
+);
+
+/**
+ * @route   DELETE /api/roles/:id
+ * @desc    Delete role
+ * @access  Private (Superadmin only)
+ */
+router.delete(
+  '/roles/:id',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  roleController.deleteRole
+);
+
+/**
+ * @route   GET /api/permissions
+ * @desc    Get all permissions
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/permissions',
+  authenticate,
+  authorize('superadmin'),
+  roleController.getAllPermissions
+);
+
+/**
+ * @route   GET /api/roles/:id/permissions
+ * @desc    Get permissions for a role
+ * @access  Private (Superadmin only)
+ */
+router.get(
+  '/roles/:id/permissions',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  roleController.getRolePermissions
+);
+
+/**
+ * @route   PUT /api/roles/:id/permissions
+ * @desc    Update role permissions
+ * @access  Private (Superadmin only)
+ */
+router.put(
+  '/roles/:id/permissions',
+  authenticate,
+  authorize('superadmin'),
+  validateUUID('id'),
+  roleController.updateRolePermissions
 );
 
 // ============================================
