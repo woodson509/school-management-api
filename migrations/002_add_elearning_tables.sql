@@ -1,5 +1,5 @@
--- Migration: E-Learning System - Add Missing Tables
--- Description: Add lessons, resources, and lesson_progress tables
+-- Migration: E-Learning System - Add Missing Tables (CLEAN VERSION)
+-- Description: Add lessons, resources, and lesson_progress tables with cleanup
 -- Created: 2025-11-28
 
 -- Create or replace the trigger function for updating updated_at timestamps
@@ -10,6 +10,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS update_lessons_updated_at ON lessons;
+DROP TRIGGER IF EXISTS update_resources_updated_at ON resources;
+DROP TRIGGER IF EXISTS update_lesson_progress_updated_at ON lesson_progress;
 
 -- Table for lessons within courses
 CREATE TABLE IF NOT EXISTS lessons (
@@ -64,7 +69,7 @@ CREATE TABLE IF NOT EXISTS lesson_progress (
     UNIQUE(lesson_id, student_id)
 );
 
--- Create indexes for better performance
+-- Create indexes for better performance (only if they don't exist)
 CREATE INDEX IF NOT EXISTS idx_lessons_course ON lessons(course_id);
 CREATE INDEX IF NOT EXISTS idx_lessons_published ON lessons(is_published);
 CREATE INDEX IF NOT EXISTS idx_lessons_order ON lessons(course_id, lesson_order);
@@ -76,7 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_resources_public ON resources(is_public);
 CREATE INDEX IF NOT EXISTS idx_lesson_progress_student ON lesson_progress(student_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_progress_lesson ON lesson_progress(lesson_id);
 
--- Add updated_at triggers to new tables
+-- Re-create triggers (we dropped them first to avoid conflicts)
 CREATE TRIGGER update_lessons_updated_at BEFORE UPDATE ON lessons
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
