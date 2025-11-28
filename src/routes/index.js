@@ -24,6 +24,7 @@ const roleController = require('../controllers/roleController');
 const migrationController = require('../controllers/migrationController');
 const logController = require('../controllers/logController');
 const backupController = require('../controllers/backupController');
+const assignmentController = require('../controllers/assignmentController');
 
 // Import validators
 const {
@@ -133,6 +134,72 @@ router.delete(
   authorize('admin'),
   validateUUID('id'),
   courseController.deleteCourse
+);
+
+// ============================================
+// ASSIGNMENT ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/courses/:courseId/assignments
+ * @desc    Get assignments by course
+ * @access  Private
+ */
+router.get(
+  '/courses/:courseId/assignments',
+  authenticate,
+  validateUUID('courseId'),
+  assignmentController.getByCourse
+);
+
+/**
+ * @route   GET /api/assignments/:id
+ * @desc    Get assignment by ID
+ * @access  Private
+ */
+router.get(
+  '/assignments/:id',
+  authenticate,
+  validateUUID('id'),
+  assignmentController.getById
+);
+
+/**
+ * @route   POST /api/assignments
+ * @desc    Create assignment
+ * @access  Private (Admin, Teacher)
+ */
+router.post(
+  '/assignments',
+  authenticate,
+  authorize('admin', 'teacher'),
+  assignmentController.create
+);
+
+/**
+ * @route   PUT /api/assignments/:id
+ * @desc    Update assignment
+ * @access  Private (Admin, Teacher)
+ */
+router.put(
+  '/assignments/:id',
+  authenticate,
+  authorize('admin', 'teacher'),
+  validateUUID('id'),
+  assignmentController.update
+);
+
+/**
+ * @route   DELETE /api/assignments/:id
+ * @desc    Delete assignment
+ * @access  Private (Admin, Teacher)
+ */
+router.delete(
+  '/assignments/:id',
+  authenticate,
+  authorize('admin', 'teacher'),
+  validateUUID('id'),
+  assignmentController.delete
 );
 
 // ============================================
