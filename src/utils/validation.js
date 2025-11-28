@@ -292,6 +292,38 @@ const validateUserUpdate = [
 ];
 
 /**
+ * Validation rules for extended user fields
+ */
+const validateUserExtended = [
+  // Common fields
+  body('phone').optional().trim().matches(/^[0-9\s\-\+\(\)]+$/).withMessage('Invalid phone number'),
+  body('date_of_birth').optional().isDate().withMessage('Invalid date'),
+  body('gender').optional().isIn(['M', 'F', 'Other']).withMessage('Invalid gender'),
+
+  // Student fields
+  body('class_id').optional().isUUID().withMessage('Invalid class ID'),
+  body('enrollment_status').optional().isIn(['active', 'suspended', 'graduated', 'withdrawn', 'transferred']).withMessage('Invalid status'),
+  body('parent_email').optional().isEmail().normalizeEmail().withMessage('Invalid parent email'),
+  body('scholarship_status').optional().isIn(['none', 'partial', 'full']).withMessage('Invalid scholarship status'),
+  body('scholarship_percentage').optional().isInt({ min: 0, max: 100 }).withMessage('Must be 0-100'),
+
+  // Teacher fields
+  body('contract_type').optional().isIn(['permanent', 'temporary', 'part_time']).withMessage('Invalid contract type'),
+  body('employment_status').optional().isIn(['active', 'on_leave', 'terminated']).withMessage('Invalid employment status'),
+  body('years_of_experience').optional().isInt({ min: 0 }).withMessage('Must be positive'),
+  body('max_teaching_hours').optional().isInt({ min: 1, max: 60 }).withMessage('Must be 1-60'),
+  body('is_class_teacher').optional().isBoolean().withMessage('Must be boolean'),
+
+  // Admin fields
+  body('position').optional().isIn(['director', 'vice_director', 'coordinator', 'secretary', 'other']).withMessage('Invalid position'),
+  body('can_approve_expenses').optional().isBoolean().withMessage('Must be boolean'),
+  body('can_manage_all_classes').optional().isBoolean().withMessage('Must be boolean'),
+  body('max_expense_approval_amount').optional().isFloat({ min: 0 }).withMessage('Must be positive'),
+
+  handleValidationErrors
+];
+
+/**
  * Validation rules for password change
  */
 const validatePasswordChange = [
@@ -319,6 +351,7 @@ module.exports = {
   validateClass,
   validateSubject,
   validateUserUpdate,
+  validateUserExtended,
   validatePasswordChange,
   handleValidationErrors
 };

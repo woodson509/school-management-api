@@ -1,19 +1,37 @@
 /**
  * User Controller
- * Handles user management operations
+ * Handles user management operations with extended pedagogical fields
  */
 
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 /**
- * Create a new user
+ * Create a new user with extended fields
  * @access Private (admin, superadmin)
  */
 exports.createUser = async (req, res) => {
     try {
-        const { full_name, email, password, role, school_id } = req.body;
         const pool = await db.getPool();
+
+        // Extract all possible fields from request body
+        const {
+            full_name, email, password, role, school_id,
+            // Common fields
+            phone, address, date_of_birth, gender, profile_picture_url,
+            // Student fields
+            class_id, student_id_number, enrollment_date, enrollment_status,
+            parent_name, parent_phone, parent_email,
+            emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+            medical_notes, special_needs, transport_method, previous_school,
+            scholarship_status, scholarship_percentage,
+            // Teacher fields
+            employee_id, hire_date, contract_type, employment_status,
+            specialization, qualifications, years_of_experience, subjects_taught,
+            department, office_location, max_teaching_hours, is_class_teacher,
+            // Admin fields
+            position, can_approve_expenses, can_manage_all_classes, max_expense_approval_amount
+        } = req.body;
 
         // Check if user exists
         const userCheck = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -27,26 +45,101 @@ exports.createUser = async (req, res) => {
         // Determine school_id based on creator's role
         let targetSchoolId = school_id;
         if (req.user.role === 'admin') {
-            // Admins can only create users for their own school
             targetSchoolId = req.user.school_id;
         }
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Build dynamic INSERT query
+        const fields = ['full_name', 'email', 'password', 'role', 'school_id', 'created_at', 'updated_at'];
+        const values = [full_name, email, hashedPassword, role || 'student', targetSchoolId || null, 'NOW()', 'NOW()'];
+        const placeholders = ['$1', '$2', '$3', '$4', '$5', 'NOW()', 'NOW()'];
+        let paramCounter = 6;
+
+        // Helper function to add optional fields
+        const addField = (fieldName, fieldValue) => {
+            if (fieldValue !== undefined && fieldValue !== null) {
+                fields.push(fieldName);
+                values.push(fieldValue);
+                placeholders.push(`$${paramCounter}`);
+                paramCounter++;
+            }
+        };
+
+        // Add common fields
+        addField('phone', phone);
+        addField('address', address);
+        addField('date_of_birth', date_of_birth);
+        addField('gender', gender);
+        addField('profile_picture_url', profile_picture_url);
+
+        // Add student-specific fields
+        if (role === 'student') {
+            addField('class_id', class_id);
+            addField('student_id_number', student_id_number);
+            addField('enrollment_date', enrollment_date || new Date().toISOString().split('T')[0]);
+            addField('enrollment_status', enrollment_status || 'active');
+            addField('parent_name', parent_name);
+            addField('parent_phone', parent_phone);
+            addField('parent_email', parent_email);
+            addField('emergency_contact_name', emergency_contact_name);
+            addField('emergency_contact_phone', emergency_contact_phone);
+            addField('emergency_contact_relationship', emergency_contact_relationship);
+            addField('medical_notes', medical_notes);
+            addField('special_needs', special_needs);
+            addField('transport_method', transport_method);
+            addField('previous_school', previous_school);
+            addField('scholarship_status', scholarship_status || 'none');
+            addField('scholarship_percentage', scholarship_percentage);
+        }
+
+        // Add teacher-specific fields
+        if (role === 'teacher') {
+            addField('employee_id', employee_id);
+            addField('hire_date', hire_date || new Date().toISOString().split('T')[0]);
+            addField('contract_type', contract_type);
+            addField('employment_status', employment_status || 'active');
+            addField('specialization', specialization);
+            addField('qualifications', qualifications ? JSON.stringify(qualifications) : null);
+            addField('years_of_experience', years_of_experience);
+            addField('subjects_taught', subjects_taught ? JSON.stringify(subjects_taught) : null);
+            addField('department', department);
+            addField('office_location', office_location);
+            addField('max_teaching_hours', max_teaching_hours);
+            addField('is_class_teacher', is_class_teacher || false);
+        }
+
+        // Add admin-specific fields
+        if (role === 'admin') {
+            addField('employee_id', employee_id);
+            addField('hire_date', hire_date || new Date().toISOString().split('T')[0]);
+            addField('position', position);
+            addField('department', department);
+            addField('can_approve_expenses', can_approve_expenses || false);
+            addField('can_manage_all_classes', can_manage_all_classes || false);
+            addField('max_expense_approval_amount', max_expense_approval_amount);
+        }
+
+        // Remove 'NOW()' strings from placeholders array and values array for created_at/updated_at
+        const nowIndex1 = fields.indexOf('created_at');
+        const nowIndex2 = fields.indexOf('updated_at');
+        if (nowIndex1 !== -1) {
+            values.splice(nowIndex1, 1);
+            placeholders[nowIndex1] = 'NOW()';
+        }
+        if (nowIndex2 !== -1) {
+            values.splice(nowIndex2 - (nowIndex1 !== -1 ? 1 : 0), 1);
+            placeholders[nowIndex2] = 'NOW()';
+        }
+
         const query = `
-            INSERT INTO users (full_name, email, password, role, school_id, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-            RETURNING id, full_name, email, role, school_id, created_at
+            INSERT INTO users (${fields.join(', ')})
+            VALUES (${placeholders.join(', ')})
+            RETURNING *
         `;
 
-        const result = await pool.query(query, [
-            full_name,
-            email,
-            hashedPassword,
-            role || 'student',
-            targetSchoolId || null
-        ]);
+        const result = await pool.query(query, values.filter(v => v !== 'NOW()'));
 
         res.status(201).json({
             success: true,
@@ -75,9 +168,10 @@ exports.getUsers = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-      SELECT u.id, u.email, u.full_name, u.role, u.school_id, s.name as school_name, u.created_at, u.updated_at
+      SELECT u.*, s.name as school_name, c.name as class_name
       FROM users u
       LEFT JOIN schools s ON u.school_id = s.id
+      LEFT JOIN classes c ON u.class_id = c.id
       WHERE 1=1
     `;
 
@@ -98,7 +192,7 @@ exports.getUsers = async (req, res) => {
         }
 
         if (search) {
-            query += ` AND (u.full_name ILIKE $${paramIndex} OR u.email ILIKE $${paramIndex})`;
+            query += ` AND (u.full_name ILIKE $${paramIndex} OR u.email ILIKE $${paramIndex} OR u.student_id_number ILIKE $${paramIndex} OR u.employee_id ILIKE $${paramIndex})`;
             params.push(`%${search}%`);
             paramIndex++;
         }
@@ -113,7 +207,6 @@ exports.getUsers = async (req, res) => {
         const countParams = [];
         let countIndex = 1;
 
-        // Enforce school isolation for count query too
         if (req.user.role === 'admin') {
             countQuery += ` AND u.school_id = $${countIndex}`;
             countParams.push(req.user.school_id);
@@ -127,7 +220,7 @@ exports.getUsers = async (req, res) => {
         }
 
         if (search) {
-            countQuery += ` AND (u.full_name ILIKE $${countIndex} OR u.email ILIKE $${countIndex})`;
+            countQuery += ` AND (u.full_name ILIKE $${countIndex} OR u.email ILIKE $${countIndex} OR u.student_id_number ILIKE $${countIndex} OR u.employee_id ILIKE $${countIndex})`;
             countParams.push(`%${search}%`);
             countIndex++;
         }
@@ -165,9 +258,11 @@ exports.getUserById = async (req, res) => {
         const pool = await db.getPool();
 
         const query = `
-      SELECT id, email, full_name, role, created_at, updated_at
-      FROM users
-      WHERE id = $1
+      SELECT u.*, s.name as school_name, c.name as class_name
+      FROM users u
+      LEFT JOIN schools s ON u.school_id = s.id
+      LEFT JOIN classes c ON u.class_id = c.id
+      WHERE u.id = $1
     `;
 
         const result = await pool.query(query, [id]);
@@ -200,7 +295,6 @@ exports.getUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { full_name, email, role, school_id } = req.body;
         const pool = await db.getPool();
 
         // Check if user is updating their own profile or is admin
@@ -214,41 +308,76 @@ exports.updateUser = async (req, res) => {
             });
         }
 
-        // Only admins can change roles
-        if (role && !isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized to change user role'
-            });
-        }
-
         const updates = [];
         const params = [];
         let paramIndex = 1;
 
-        if (full_name !== undefined) {
-            updates.push(`full_name = $${paramIndex}`);
-            params.push(full_name);
-            paramIndex++;
+        // Helper function to add update fields
+        const addUpdate = (fieldName, fieldValue) => {
+            if (fieldValue !== undefined) {
+                updates.push(`${fieldName} = $${paramIndex}`);
+                params.push(fieldValue);
+                paramIndex++;
+            }
+        };
+
+        // Basic fields
+        addUpdate('full_name', req.body.full_name);
+        addUpdate('email', req.body.email);
+
+        // Only admins can change roles
+        if (isAdmin) {
+            addUpdate('role', req.body.role);
+            addUpdate('school_id', req.body.school_id);
+            addUpdate('is_active', req.body.is_active);
         }
 
-        if (email !== undefined) {
-            updates.push(`email = $${paramIndex}`);
-            params.push(email);
-            paramIndex++;
-        }
+        // Common fields
+        addUpdate('phone', req.body.phone);
+        addUpdate('address', req.body.address);
+        addUpdate('date_of_birth', req.body.date_of_birth);
+        addUpdate('gender', req.body.gender);
+        addUpdate('profile_picture_url', req.body.profile_picture_url);
+        addUpdate('access_revoked_at', req.body.access_revoked_at);
+        addUpdate('access_revoked_reason', req.body.access_revoked_reason);
 
-        if (role !== undefined && isAdmin) {
-            updates.push(`role = $${paramIndex}`);
-            params.push(role);
-            paramIndex++;
-        }
+        // Student fields
+        addUpdate('class_id', req.body.class_id);
+        addUpdate('student_id_number', req.body.student_id_number);
+        addUpdate('enrollment_date', req.body.enrollment_date);
+        addUpdate('enrollment_status', req.body.enrollment_status);
+        addUpdate('parent_name', req.body.parent_name);
+        addUpdate('parent_phone', req.body.parent_phone);
+        addUpdate('parent_email', req.body.parent_email);
+        addUpdate('emergency_contact_name', req.body.emergency_contact_name);
+        addUpdate('emergency_contact_phone', req.body.emergency_contact_phone);
+        addUpdate('emergency_contact_relationship', req.body.emergency_contact_relationship);
+        addUpdate('medical_notes', req.body.medical_notes);
+        addUpdate('special_needs', req.body.special_needs);
+        addUpdate('transport_method', req.body.transport_method);
+        addUpdate('previous_school', req.body.previous_school);
+        addUpdate('scholarship_status', req.body.scholarship_status);
+        addUpdate('scholarship_percentage', req.body.scholarship_percentage);
 
-        if (school_id !== undefined && isAdmin) {
-            updates.push(`school_id = $${paramIndex}`);
-            params.push(school_id);
-            paramIndex++;
-        }
+        // Teacher fields
+        addUpdate('employee_id', req.body.employee_id);
+        addUpdate('hire_date', req.body.hire_date);
+        addUpdate('contract_type', req.body.contract_type);
+        addUpdate('employment_status', req.body.employment_status);
+        addUpdate('specialization', req.body.specialization);
+        if (req.body.qualifications) addUpdate('qualifications', JSON.stringify(req.body.qualifications));
+        addUpdate('years_of_experience', req.body.years_of_experience);
+        if (req.body.subjects_taught) addUpdate('subjects_taught', JSON.stringify(req.body.subjects_taught));
+        addUpdate('department', req.body.department);
+        addUpdate('office_location', req.body.office_location);
+        addUpdate('max_teaching_hours', req.body.max_teaching_hours);
+        addUpdate('is_class_teacher', req.body.is_class_teacher);
+
+        // Admin fields
+        addUpdate('position', req.body.position);
+        addUpdate('can_approve_expenses', req.body.can_approve_expenses);
+        addUpdate('can_manage_all_classes', req.body.can_manage_all_classes);
+        addUpdate('max_expense_approval_amount', req.body.max_expense_approval_amount);
 
         if (updates.length === 0) {
             return res.status(400).json({
@@ -264,7 +393,7 @@ exports.updateUser = async (req, res) => {
       UPDATE users
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
-      RETURNING id, email, full_name, role, created_at, updated_at
+      RETURNING *
     `;
 
         const result = await pool.query(query, params);
