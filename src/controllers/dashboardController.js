@@ -247,7 +247,7 @@ const getAdminDashboard = async (req, res) => {
       user_email,
       created_at
         FROM activity_logs
-        WHERE details ->> 'school_id' = $1 OR user_email IN(SELECT email FROM users WHERE school_id = $1)
+        WHERE details->>'school_id' = $1::text OR user_email IN (SELECT email FROM users WHERE school_id = $1)
         ORDER BY created_at DESC
         LIMIT 5
       `;
@@ -265,7 +265,7 @@ const getAdminDashboard = async (req, res) => {
     e.id,
       e.title,
       e.exam_date,
-      c.name as course_name,
+      c.title as course_name,
       c.code as course_code,
       (SELECT COUNT(*) FROM enrollments en WHERE en.course_id = e.course_id) as student_count
         FROM exams e
