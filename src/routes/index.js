@@ -914,7 +914,7 @@ router.get(
 
 // Grade routes
 const gradeController = require('../controllers/gradeController');
-const examController = require('../controllers/examController');
+
 
 router.get('/grades', authenticate, authorize('admin', 'teacher'), gradeController.getAllGrades);
 router.get('/exams/:id/attempts', authenticate, authorize('admin', 'teacher'), examController.getExamAttempts);
@@ -957,6 +957,35 @@ router.post(
   authorize('superadmin'),
   migrationController.runSchoolsSchemaMigration
 );
+
+// ============================================
+// E-LEARNING ROUTES
+// ============================================
+
+const lessonController = require('../controllers/lessonController');
+const enrollmentController = require('../controllers/enrollmentController');
+const announcementController = require('../controllers/announcementController');
+
+// Lesson routes
+router.get('/courses/:courseId/lessons', authenticate, lessonController.getLessonsByCourse);
+router.get('/lessons/:id', authenticate, lessonController.getLessonById);
+router.post('/lessons', authenticate, authorize('admin', 'teacher'), lessonController.createLesson);
+router.put('/lessons/:id', authenticate, authorize('admin', 'teacher'), lessonController.updateLesson);
+router.delete('/lessons/:id', authenticate, authorize('admin', 'teacher'), lessonController.deleteLesson);
+
+// Enrollment routes
+router.post('/enrollments', authenticate, authorize('admin', 'teacher'), enrollmentController.enrollStudent);
+router.get('/courses/:courseId/enrollments', authenticate, enrollmentController.getEnrollmentsByCourse);
+router.get('/students/:studentId/enrollments', authenticate, enrollmentController.getEnrollmentsByStudent);
+router.put('/enrollments/:id', authenticate, authorize('admin', 'teacher'), enrollmentController.updateEnrollment);
+router.delete('/enrollments/:id', authenticate, authorize('admin', 'teacher'), enrollmentController.unenrollStudent);
+
+// Announcement routes
+router.get('/announcements', authenticate, announcementController.getAnnouncements);
+router.post('/announcements', authenticate, authorize('admin', 'teacher'), announcementController.createAnnouncement);
+router.put('/announcements/:id', authenticate, authorize('admin', 'teacher'), announcementController.updateAnnouncement);
+router.delete('/announcements/:id', authenticate, authorize('admin', 'teacher'), announcementController.deleteAnnouncement);
+
 
 // ============================================
 // HEALTH CHECK
