@@ -12,7 +12,7 @@ const db = require('../config/database');
  */
 const createCourse = async (req, res) => {
   try {
-    const { title, description, code, credits, school_id, teacher_id } = req.body;
+    const { title, description, code, credits, school_id, teacher_id, class_id } = req.body;
 
     // Authorization check
     if (req.user.role === 'teacher') {
@@ -66,12 +66,27 @@ const createCourse = async (req, res) => {
       }
     }
 
+    // If class_id provided, verify class exists
+    if (class_id) {
+      const classCheck = await db.query(
+        'SELECT id FROM classes WHERE id = $1',
+        [class_id]
+      );
+
+      if (classCheck.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Class not found'
+        });
+      }
+    }
+
     // Create course
     const result = await db.query(
-      `INSERT INTO courses (school_id, teacher_id, title, description, code, credits)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO courses (school_id, teacher_id, class_id, title, description, code, credits)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [school_id, teacher_id || null, title, description || null, code, credits || 0]
+      [school_id, teacher_id || null, class_id || null, title, description || null, code, credits || 0]
     );
 
     const course = result.rows[0];
@@ -101,10 +116,11 @@ const getCourses = async (req, res) => {
     const { school_id, teacher_id, is_active } = req.query;
 
     let query = `
-      SELECT c.*, u.full_name as teacher_name, s.name as school_name
+      SELECT c.*, u.full_name as teacher_name, s.name as school_name, cl.name as class_name
       FROM courses c
       LEFT JOIN users u ON c.teacher_id = u.id
       LEFT JOIN schools s ON c.school_id = s.id
+      LEFT JOIN classes cl ON c.class_id = cl.id
       WHERE 1=1
     `;
     const params = [];
@@ -164,10 +180,11 @@ const getCourseById = async (req, res) => {
     const { id } = req.params;
 
     const result = await db.query(
-      `SELECT c.*, u.full_name as teacher_name, s.name as school_name
+      `SELECT c.*, u.full_name as teacher_name, s.name as school_name, cl.name as class_name
        FROM courses c
        LEFT JOIN users u ON c.teacher_id = u.id
        LEFT JOIN schools s ON c.school_id = s.id
+       LEFT JOIN classes cl ON c.class_id = cl.id
        WHERE c.id = $1`,
       [id]
     );
@@ -213,7 +230,7 @@ const getCourseById = async (req, res) => {
 const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, code, credits, teacher_id, is_active } = req.body;
+    const { title, description, code, credits, teacher_id, class_id, is_active } = req.body;
 
     // Check if course exists
     const courseCheck = await db.query(
@@ -266,6 +283,11 @@ const updateCourse = async (req, res) => {
     if (teacher_id !== undefined) {
       updates.push(`teacher_id = $${paramCount}`);
       params.push(teacher_id);
+      paramCount++;
+    }
+    if (class_id !== undefined) {
+      updates.push(`class_id = $${paramCount}`);
+      params.push(class_id);
       paramCount++;
     }
     if (is_active !== undefined) {
