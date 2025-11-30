@@ -25,6 +25,7 @@ const migrationController = require('../controllers/migrationController');
 const logController = require('../controllers/logController');
 const backupController = require('../controllers/backupController');
 const assignmentController = require('../controllers/assignmentController');
+const attendanceController = require('../controllers/attendanceController');
 
 // Import validators
 const {
@@ -1052,6 +1053,10 @@ router.get('/announcements', authenticate, announcementController.getAnnouncemen
 router.post('/announcements', authenticate, authorize('admin', 'teacher'), announcementController.createAnnouncement);
 router.put('/announcements/:id', authenticate, authorize('admin', 'teacher'), announcementController.updateAnnouncement);
 router.delete('/announcements/:id', authenticate, authorize('admin', 'teacher'), announcementController.deleteAnnouncement);
+
+// Attendance routes
+router.get('/attendance', authenticate, authorize('admin', 'teacher'), attendanceController.getAttendance);
+router.post('/attendance', authenticate, authorize('admin', 'teacher'), attendanceController.saveAttendance);
 
 
 // ============================================
