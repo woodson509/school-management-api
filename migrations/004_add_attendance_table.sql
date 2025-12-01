@@ -15,8 +15,11 @@ CREATE TABLE IF NOT EXISTS attendance (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_attendance_class_date ON attendance(class_id, date);
-CREATE INDEX idx_attendance_student ON attendance(student_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, date);
+CREATE INDEX IF NOT EXISTS idx_attendance_student ON attendance(student_id);
+
+-- Drop existing trigger if it exists, then create it
+DROP TRIGGER IF EXISTS update_attendance_updated_at ON attendance;
 
 -- Trigger for updated_at
 CREATE TRIGGER update_attendance_updated_at BEFORE UPDATE ON attendance

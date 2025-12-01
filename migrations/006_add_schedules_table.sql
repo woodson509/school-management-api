@@ -5,7 +5,8 @@
 CREATE TABLE IF NOT EXISTS schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
-    subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
+    subject_id UUID,
+    subject_name VARCHAR(255),
     teacher_id UUID REFERENCES users(id) ON DELETE SET NULL,
     day_of_week VARCHAR(20) NOT NULL CHECK (day_of_week IN ('Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche')),
     start_time TIME NOT NULL,

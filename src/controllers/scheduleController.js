@@ -25,12 +25,11 @@ exports.getSchedules = async (req, res) => {
                 s.class_id,
                 c.name as class_name,
                 s.subject_id,
-                sub.name as subject_name,
+                s.subject_name,
                 s.teacher_id,
                 u.full_name as teacher_name
             FROM schedules s
             LEFT JOIN classes c ON s.class_id = c.id
-            LEFT JOIN subjects sub ON s.subject_id = sub.id
             LEFT JOIN users u ON s.teacher_id = u.id
             WHERE 1=1
         `;
@@ -66,19 +65,19 @@ exports.getSchedules = async (req, res) => {
  */
 exports.createSchedule = async (req, res) => {
     try {
-        const { class_id, subject_id, teacher_id, day_of_week, start_time, end_time, room, color, notes } = req.body;
+        const { class_id, subject_id, subject_name, teacher_id, day_of_week, start_time, end_time, room, color, notes } = req.body;
 
         const query = `
             INSERT INTO schedules (
-                class_id, subject_id, teacher_id, 
+                class_id, subject_id, subject_name, teacher_id, 
                 day_of_week, start_time, end_time, room, color, notes
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *
         `;
 
         const result = await db.query(query, [
-            class_id, subject_id, teacher_id,
+            class_id, subject_id, subject_name, teacher_id,
             day_of_week, start_time, end_time, room, color || '#3B82F6', notes
         ]);
 
@@ -104,19 +103,19 @@ exports.createSchedule = async (req, res) => {
 exports.updateSchedule = async (req, res) => {
     try {
         const { id } = req.params;
-        const { class_id, subject_id, teacher_id, day_of_week, start_time, end_time, room, color, notes } = req.body;
+        const { class_id, subject_id, subject_name, teacher_id, day_of_week, start_time, end_time, room, color, notes } = req.body;
 
         const query = `
             UPDATE schedules 
-            SET class_id = $1, subject_id = $2, teacher_id = $3,
-                day_of_week = $4, start_time = $5, end_time = $6,
-                room = $7, color = $8, notes = $9, updated_at = NOW()
-            WHERE id = $10
+            SET class_id = $1, subject_id = $2, subject_name = $3, teacher_id = $4,
+                day_of_week = $5, start_time = $6, end_time = $7,
+                room = $8, color = $9, notes = $10, updated_at = NOW()
+            WHERE id = $11
             RETURNING *
         `;
 
         const result = await db.query(query, [
-            class_id, subject_id, teacher_id,
+            class_id, subject_id, subject_name, teacher_id,
             day_of_week, start_time, end_time, room, color, notes,
             id
         ]);
