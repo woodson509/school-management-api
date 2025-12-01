@@ -1155,4 +1155,66 @@ router.get(
   paymentController.getFees
 );
 
+/**
+ * @route   POST /api/fees
+ * @desc    Create a new fee type
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/fees',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.createFee
+);
+
+/**
+ * @route   PUT /api/fees/:id
+ * @desc    Update a fee type
+ * @access  Private (Admin, Superadmin)
+ */
+router.put(
+  '/fees/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  paymentController.updateFee
+);
+
+/**
+ * @route   DELETE /api/fees/:id
+ * @desc    Delete a fee type
+ * @access  Private (Admin, Superadmin)
+ */
+router.delete(
+  '/fees/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  paymentController.deleteFee
+);
+
+/**
+ * @route   GET /api/teacher-payments
+ * @desc    Get teacher payments
+ * @access  Private (Admin, Superadmin)
+ */
+router.get(
+  '/teacher-payments',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.getTeacherPayments
+);
+
+/**
+ * @route   POST /api/teacher-payments
+ * @desc    Record teacher payment
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/teacher-payments',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.createTeacherPayment
+);
+
 module.exports = router;

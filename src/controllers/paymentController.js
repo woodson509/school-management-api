@@ -212,12 +212,199 @@ exports.getFees = async (req, res) => {
             success: true,
             data: result.rows
         });
-    } catch (error) {
-        console.error('Error fetching fees:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching fees',
-            error: error.message
-        });
-    }
-};
+        /**
+         * Create a new fee type
+         * @access Private (Admin)
+         */
+        exports.createFee = async (req, res) => {
+            try {
+                const { name, type, amount, description } = req.body;
+
+                const query = `
+            INSERT INTO fees (name, type, amount, description)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        `;
+
+                const result = await db.query(query, [name, type, amount, description]);
+
+                res.status(201).json({
+                    success: true,
+                    data: result.rows[0]
+                });
+            } catch (error) {
+                console.error('Error creating fee:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error creating fee',
+                    error: error.message
+                });
+            }
+        };
+
+        /**
+         * Update a fee type
+         * @access Private (Admin)
+         */
+        exports.updateFee = async (req, res) => {
+            try {
+                const { id } = req.params;
+                const { name, type, amount, description } = req.body;
+
+                const query = `
+            UPDATE fees 
+            SET name = $1, type = $2, amount = $3, description = $4, updated_at = NOW()
+            WHERE id = $5
+            RETURNING *
+        `;
+
+                const result = await db.query(query, [name, type, amount, description, id]);
+
+                if (result.rows.length === 0) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Fee not found'
+                    });
+                }
+
+                res.status(200).json({
+                    success: true,
+                    data: result.rows[0]
+                });
+            } catch (error) {
+                console.error('Error updating fee:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error updating fee',
+                    error: error.message
+                });
+            }
+        };
+
+        /**
+         * Delete a fee type
+         * @access Private (Admin)
+         */
+        exports.deleteFee = async (req, res) => {
+            try {
+                const { id } = req.params;
+
+                // Check if fee is used
+                const checkQuery = 'SELECT COUNT(*) FROM student_fees WHERE fee_id = $1';
+                const checkResult = await db.query(checkQuery, [id]);
+
+                if (parseInt(checkResult.rows[0].count) > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Cannot delete fee type because it is assigned to students'
+                    });
+                }
+
+                await db.query('DELETE FROM fees WHERE id = $1', [id]);
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Fee deleted successfully'
+                });
+            } catch (error) {
+                console.error('Error deleting fee:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error deleting fee',
+                    error: error.message
+                });
+            }
+        };
+
+        /**
+         * Get all teacher payments
+         * @access Private (Admin)
+         */
+        exports.getTeacherPayments = async (req, res) => {
+            try {
+                const { teacher_id, month, year } = req.query;
+
+                let query = `
+            SELECT 
+                tp.*,
+                u.full_name as teacher_name,
+                u.email as teacher_email
+            FROM teacher_payments tp
+            JOIN users u ON tp.teacher_id = u.id
+            WHERE 1=1
+        `;
+
+                const params = [];
+                let paramCount = 1;
+
+                if (teacher_id) {
+                    query += ` AND tp.teacher_id = $${paramCount}`;
+                    params.push(teacher_id);
+                    paramCount++;
+                }
+
+                if (month) {
+                    query += ` AND tp.period_month = $${paramCount}`;
+                    params.push(month);
+                    paramCount++;
+                }
+
+                if (year) {
+                    query += ` AND tp.period_year = $${paramCount}`;
+                    params.push(year);
+                    paramCount++;
+                }
+
+                query += ' ORDER BY tp.payment_date DESC';
+
+                const result = await db.query(query, params);
+
+                res.status(200).json({
+                    success: true,
+                    data: result.rows
+                });
+            } catch (error) {
+                console.error('Error fetching teacher payments:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error fetching teacher payments',
+                    error: error.message
+                });
+            }
+        };
+
+        /**
+         * Record a teacher payment
+         * @access Private (Admin)
+         */
+        exports.createTeacherPayment = async (req, res) => {
+            try {
+                const { teacher_id, amount, payment_method, period_month, period_year, notes } = req.body;
+                const recorded_by = req.user.id;
+
+                const query = `
+            INSERT INTO teacher_payments (
+                teacher_id, amount, payment_method, period_month, period_year, notes, recorded_by
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *
+        `;
+
+                const result = await db.query(query, [
+                    teacher_id, amount, payment_method, period_month, period_year, notes, recorded_by
+                ]);
+
+                res.status(201).json({
+                    success: true,
+                    message: 'Teacher payment recorded successfully',
+                    data: result.rows[0]
+                });
+            } catch (error) {
+                console.error('Error recording teacher payment:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error recording teacher payment',
+                    error: error.message
+                });
+            }
+        };
