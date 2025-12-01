@@ -67,6 +67,9 @@ exports.createSchedule = async (req, res) => {
     try {
         const { class_id, subject_id, subject_name, teacher_id, day_of_week, start_time, end_time, room, color, notes } = req.body;
 
+        // Convert empty strings to null for UUID fields
+        const cleanSubjectId = subject_id && subject_id.trim() !== '' ? subject_id : null;
+
         const query = `
             INSERT INTO schedules (
                 class_id, subject_id, subject_name, teacher_id, 
@@ -77,8 +80,16 @@ exports.createSchedule = async (req, res) => {
         `;
 
         const result = await db.query(query, [
-            class_id, subject_id, subject_name, teacher_id,
-            day_of_week, start_time, end_time, room, color || '#3B82F6', notes
+            class_id,
+            cleanSubjectId,  // Use cleaned subject_id
+            subject_name,
+            teacher_id,
+            day_of_week,
+            start_time,
+            end_time,
+            room,
+            color || '#3B82F6',
+            notes || null
         ]);
 
         res.status(201).json({
@@ -105,6 +116,9 @@ exports.updateSchedule = async (req, res) => {
         const { id } = req.params;
         const { class_id, subject_id, subject_name, teacher_id, day_of_week, start_time, end_time, room, color, notes } = req.body;
 
+        // Convert empty strings to null for UUID fields
+        const cleanSubjectId = subject_id && subject_id.trim() !== '' ? subject_id : null;
+
         const query = `
             UPDATE schedules 
             SET class_id = $1, subject_id = $2, subject_name = $3, teacher_id = $4,
@@ -115,8 +129,16 @@ exports.updateSchedule = async (req, res) => {
         `;
 
         const result = await db.query(query, [
-            class_id, subject_id, subject_name, teacher_id,
-            day_of_week, start_time, end_time, room, color, notes,
+            class_id,
+            cleanSubjectId,  // Use cleaned subject_id
+            subject_name,
+            teacher_id,
+            day_of_week,
+            start_time,
+            end_time,
+            room,
+            color,
+            notes || null,
             id
         ]);
 
