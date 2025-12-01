@@ -4,7 +4,6 @@
 
 CREATE TABLE IF NOT EXISTS schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
     class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
     subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
     teacher_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -20,7 +19,6 @@ CREATE TABLE IF NOT EXISTS schedules (
 );
 
 -- Create indexes
-CREATE INDEX IF NOT EXISTS idx_schedules_school ON schedules(school_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_class ON schedules(class_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_subject ON schedules(subject_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_teacher ON schedules(teacher_id);
