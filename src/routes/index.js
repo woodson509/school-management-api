@@ -26,6 +26,7 @@ const logController = require('../controllers/logController');
 const backupController = require('../controllers/backupController');
 const assignmentController = require('../controllers/assignmentController');
 const attendanceController = require('../controllers/attendanceController');
+const paymentController = require('../controllers/paymentController');
 
 // Import validators
 const {
@@ -1089,5 +1090,69 @@ router.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// ============================================
+// PAYMENT ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/student-fees
+ * @desc    Get all student fees (invoices)
+ * @access  Private (Admin, Superadmin)
+ */
+router.get(
+  '/student-fees',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.getStudentFees
+);
+
+/**
+ * @route   POST /api/student-fees
+ * @desc    Assign fee to student
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/student-fees',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.createStudentFee
+);
+
+/**
+ * @route   POST /api/payments
+ * @desc    Record a payment
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/payments',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.recordPayment
+);
+
+/**
+ * @route   GET /api/payments/stats
+ * @desc    Get payment statistics
+ * @access  Private (Admin, Superadmin)
+ */
+router.get(
+  '/payments/stats',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.getStats
+);
+
+/**
+ * @route   GET /api/fees
+ * @desc    Get standard fees list
+ * @access  Private (Admin, Superadmin)
+ */
+router.get(
+  '/fees',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  paymentController.getFees
+);
 
 module.exports = router;
