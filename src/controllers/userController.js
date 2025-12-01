@@ -52,9 +52,9 @@ exports.createUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Build dynamic INSERT query
-        const fields = ['full_name', 'email', 'password', 'role', 'school_id', 'created_at', 'updated_at'];
-        const values = [full_name, email, hashedPassword, role || 'student', targetSchoolId || null, 'NOW()', 'NOW()'];
-        const placeholders = ['$1', '$2', '$3', '$4', '$5', 'NOW()', 'NOW()'];
+        const fields = ['full_name', 'email', 'password', 'role', 'school_id'];
+        const values = [full_name, email, hashedPassword, role || 'student', targetSchoolId || null];
+        const placeholders = ['$1', '$2', '$3', '$4', '$5'];
         let paramCounter = 6;
 
         // Helper function to add optional fields
@@ -121,17 +121,9 @@ exports.createUser = async (req, res) => {
             addField('max_expense_approval_amount', max_expense_approval_amount);
         }
 
-        // Remove 'NOW()' strings from placeholders array and values array for created_at/updated_at
-        const nowIndex1 = fields.indexOf('created_at');
-        const nowIndex2 = fields.indexOf('updated_at');
-        if (nowIndex1 !== -1) {
-            values.splice(nowIndex1, 1);
-            placeholders[nowIndex1] = 'NOW()';
-        }
-        if (nowIndex2 !== -1) {
-            values.splice(nowIndex2 - (nowIndex1 !== -1 ? 1 : 0), 1);
-            placeholders[nowIndex2] = 'NOW()';
-        }
+        // Add created_at and updated_at at the end
+        fields.push('created_at', 'updated_at');
+        placeholders.push('NOW()', 'NOW()');
 
         const query = `
             INSERT INTO users (${fields.join(', ')})
@@ -139,7 +131,7 @@ exports.createUser = async (req, res) => {
             RETURNING *
         `;
 
-        const result = await pool.query(query, values.filter(v => v !== 'NOW()'));
+        const result = await pool.query(query, values);
 
         res.status(201).json({
             success: true,
