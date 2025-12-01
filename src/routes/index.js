@@ -1058,6 +1058,13 @@ router.delete('/announcements/:id', authenticate, authorize('admin', 'teacher'),
 router.get('/attendance', authenticate, authorize('admin', 'teacher'), attendanceController.getAttendance);
 router.post('/attendance', authenticate, authorize('admin', 'teacher'), attendanceController.saveAttendance);
 
+// Curriculum routes
+const curriculumController = require('../controllers/curriculumController');
+router.get('/curricula', authenticate, curriculumController.getCurricula);
+router.post('/curricula', authenticate, authorize('admin', 'superadmin'), curriculumController.createCurriculum);
+router.put('/curricula/:id', authenticate, authorize('admin', 'superadmin'), curriculumController.updateCurriculum);
+router.delete('/curricula/:id', authenticate, authorize('admin', 'superadmin'), curriculumController.deleteCurriculum);
+
 
 // ============================================
 // HEALTH CHECK
