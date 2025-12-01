@@ -1065,6 +1065,13 @@ router.post('/curricula', authenticate, authorize('admin', 'superadmin'), curric
 router.put('/curricula/:id', authenticate, authorize('admin', 'superadmin'), curriculumController.updateCurriculum);
 router.delete('/curricula/:id', authenticate, authorize('admin', 'superadmin'), curriculumController.deleteCurriculum);
 
+// Schedule routes
+const scheduleController = require('../controllers/scheduleController');
+router.get('/schedules', authenticate, scheduleController.getSchedules);
+router.post('/schedules', authenticate, authorize('admin', 'teacher'), scheduleController.createSchedule);
+router.put('/schedules/:id', authenticate, authorize('admin', 'teacher'), scheduleController.updateSchedule);
+router.delete('/schedules/:id', authenticate, authorize('admin', 'teacher'), scheduleController.deleteSchedule);
+
 
 // ============================================
 // HEALTH CHECK
