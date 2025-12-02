@@ -27,6 +27,9 @@ const backupController = require('../controllers/backupController');
 const assignmentController = require('../controllers/assignmentController');
 const attendanceController = require('../controllers/attendanceController');
 const paymentController = require('../controllers/paymentController');
+const settingsController = require('../controllers/settingsController');
+const gradesController = require('../controllers/gradesController');
+const competencyController = require('../controllers/competencyController');
 
 // Import validators
 const {
@@ -1215,6 +1218,283 @@ router.post(
   authenticate,
   authorize('admin', 'superadmin'),
   paymentController.createTeacherPayment
+);
+
+// ============================================================================
+// GRADING SYSTEM ROUTES
+// ============================================================================
+
+/**
+ * @route   GET /api/settings
+ * @desc    Get all school settings
+ * @access  Private (Admin, Superadmin)
+ */
+router.get(
+  '/settings',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  settingsController.getSettings
+);
+
+/**
+ * @route   PUT /api/settings
+ * @desc    Update a school setting
+ * @access  Private (Admin, Superadmin)
+ */
+router.put(
+  '/settings',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  settingsController.updateSetting
+);
+
+/**
+ * @route   GET /api/grading-scales
+ * @desc    Get all grading scales
+ * @access  Private
+ */
+router.get(
+  '/grading-scales',
+  authenticate,
+  settingsController.getGradingScales
+);
+
+/**
+ * @route   POST /api/grading-scales
+ * @desc    Create a new grading scale
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/grading-scales',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  settingsController.createGradingScale
+);
+
+/**
+ * @route   GET /api/report-periods
+ * @desc    Get all report periods
+ * @access  Private
+ */
+router.get(
+  '/report-periods',
+  authenticate,
+  settingsController.getReportPeriods
+);
+
+/**
+ * @route   POST /api/report-periods
+ * @desc    Create a new report period
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/report-periods',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  settingsController.createReportPeriod
+);
+
+/**
+ * @route   PUT /api/report-periods/:id
+ * @desc    Update a report period
+ * @access  Private (Admin, Superadmin)
+ */
+router.put(
+  '/report-periods/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  settingsController.updateReportPeriod
+);
+
+/**
+ * @route   DELETE /api/report-periods/:id
+ * @desc    Delete a report period
+ * @access  Private (Admin, Superadmin)
+ */
+router.delete(
+  '/report-periods/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  settingsController.deleteReportPeriod
+);
+
+/**
+ * @route   GET /api/subject-coefficients
+ * @desc    Get subject coefficients
+ * @access  Private
+ */
+router.get(
+  '/subject-coefficients',
+  authenticate,
+  settingsController.getSubjectCoefficients
+);
+
+/**
+ * @route   POST /api/subject-coefficients
+ * @desc    Set subject coefficient
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/subject-coefficients',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  settingsController.setSubjectCoefficient
+);
+
+/**
+ * @route   GET /api/grades
+ * @desc    Get grades with filtering
+ * @access  Private
+ */
+router.get(
+  '/grades',
+  authenticate,
+  gradesController.getGrades
+);
+
+/**
+ * @route   POST /api/grades
+ * @desc    Create a new grade
+ * @access  Private (Teacher, Admin)
+ */
+router.post(
+  '/grades',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  gradesController.createGrade
+);
+
+/**
+ * @route   PUT /api/grades/:id
+ * @desc    Update a grade
+ * @access  Private (Teacher, Admin)
+ */
+router.put(
+  '/grades/:id',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  validateUUID('id'),
+  gradesController.updateGrade
+);
+
+/**
+ * @route   DELETE /api/grades/:id
+ * @desc    Delete a grade
+ * @access  Private (Teacher, Admin)
+ */
+router.delete(
+  '/grades/:id',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  validateUUID('id'),
+  gradesController.deleteGrade
+);
+
+/**
+ * @route   GET /api/grades/average
+ * @desc    Calculate average for a student/subject/period
+ * @access  Private
+ */
+router.get(
+  '/grades/average',
+  authenticate,
+  gradesController.calculateAverage
+);
+
+/**
+ * @route   GET /api/grades/overall-average
+ * @desc    Calculate overall average for a student/period
+ * @access  Private
+ */
+router.get(
+  '/grades/overall-average',
+  authenticate,
+  gradesController.calculateOverallAverage
+);
+
+/**
+ * @route   GET /api/competencies
+ * @desc    Get all competencies
+ * @access  Private
+ */
+router.get(
+  '/competencies',
+  authenticate,
+  competencyController.getCompetencies
+);
+
+/**
+ * @route   POST /api/competencies
+ * @desc    Create a new competency
+ * @access  Private (Admin, Teacher)
+ */
+router.post(
+  '/competencies',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  competencyController.createCompetency
+);
+
+/**
+ * @route   PUT /api/competencies/:id
+ * @desc    Update a competency
+ * @access  Private (Admin, Teacher)
+ */
+router.put(
+  '/competencies/:id',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  validateUUID('id'),
+  competencyController.updateCompetency
+);
+
+/**
+ * @route   DELETE /api/competencies/:id
+ * @desc    Delete a competency
+ * @access  Private (Admin)
+ */
+router.delete(
+  '/competencies/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  competencyController.deleteCompetency
+);
+
+/**
+ * @route   GET /api/competency-evaluations
+ * @desc    Get competency evaluations
+ * @access  Private
+ */
+router.get(
+  '/competency-evaluations',
+  authenticate,
+  competencyController.getEvaluations
+);
+
+/**
+ * @route   POST /api/competency-evaluations
+ * @desc    Evaluate a competency
+ * @access  Private (Teacher, Admin)
+ */
+router.post(
+  '/competency-evaluations',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  competencyController.evaluateCompetency
+);
+
+/**
+ * @route   GET /api/competency-evaluations/summary
+ * @desc    Get competency summary for a student
+ * @access  Private
+ */
+router.get(
+  '/competency-evaluations/summary',
+  authenticate,
+  competencyController.getStudentCompetencySummary
 );
 
 module.exports = router;
