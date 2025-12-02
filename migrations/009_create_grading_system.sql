@@ -4,9 +4,22 @@
 -- Created: 2025-12-02
 
 -- ============================================================================
+-- DROP EXISTING TABLES (Clean slate)
+-- ============================================================================
+DROP TABLE IF EXISTS competency_evaluations CASCADE;
+DROP TABLE IF EXISTS competencies CASCADE;
+DROP TABLE IF EXISTS grades CASCADE;
+DROP TABLE IF EXISTS subject_coefficients CASCADE;
+DROP TABLE IF EXISTS subjects CASCADE;
+DROP TABLE IF EXISTS report_periods CASCADE;
+DROP TABLE IF EXISTS school_settings CASCADE;
+DROP TABLE IF EXISTS grading_scales CASCADE;
+
+
+-- ============================================================================
 -- GRADING SCALES (Échelles de notation)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS grading_scales (
+CREATE TABLE grading_scales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(50) NOT NULL, -- e.g., "Sur 10", "Sur 20", "Sur 100"
     max_value DECIMAL(5, 2) NOT NULL, -- e.g., 10.00, 20.00, 100.00
@@ -19,7 +32,7 @@ CREATE TABLE IF NOT EXISTS grading_scales (
 -- ============================================================================
 -- SCHOOL SETTINGS (Configuration globale)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS school_settings (
+CREATE TABLE school_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     setting_key VARCHAR(100) UNIQUE NOT NULL,
     setting_value TEXT,
@@ -43,7 +56,7 @@ ON CONFLICT (setting_key) DO NOTHING;
 -- ============================================================================
 -- REPORT PERIODS (Périodes d'évaluation: trimestre, semestre, etc.)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS report_periods (
+CREATE TABLE report_periods (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL, -- e.g., "Trimestre 1", "Semestre 1"
     period_type VARCHAR(50) NOT NULL CHECK (period_type IN ('trimester', 'semester', 'quarter', 'monthly', 'custom')),
@@ -60,9 +73,31 @@ CREATE INDEX IF NOT EXISTS idx_report_periods_year ON report_periods(school_year
 CREATE INDEX IF NOT EXISTS idx_report_periods_active ON report_periods(is_active);
 
 -- ============================================================================
+-- SUBJECTS (Matières/Cours)
+-- ============================================================================
+CREATE TABLE subjects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(20) UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_subjects_code ON subjects(code);
+CREATE INDEX IF NOT EXISTS idx_subjects_active ON subjects(is_active);
+
+-- Trigger for subjects
+DROP TRIGGER IF EXISTS update_subjects_updated_at ON subjects;
+CREATE TRIGGER update_subjects_updated_at BEFORE UPDATE ON subjects
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ============================================================================
 -- SUBJECT COEFFICIENTS (Coefficients par matière et niveau)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS subject_coefficients (
+CREATE TABLE subject_coefficients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
     class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
@@ -78,7 +113,7 @@ CREATE INDEX IF NOT EXISTS idx_subject_coefficients_class ON subject_coefficient
 -- ============================================================================
 -- GRADES (Notes des élèves)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS grades (
+CREATE TABLE grades (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_id UUID REFERENCES users(id) ON DELETE CASCADE,
     subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
@@ -102,7 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_grades_class ON grades(class_id);
 -- ============================================================================
 -- COMPETENCIES (Référentiel de compétences)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS competencies (
+CREATE TABLE competencies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code VARCHAR(50) UNIQUE NOT NULL, -- e.g., "MATH-C1", "FR-ORAL-1"
     name VARCHAR(255) NOT NULL,
@@ -121,7 +156,7 @@ CREATE INDEX IF NOT EXISTS idx_competencies_code ON competencies(code);
 -- ============================================================================
 -- COMPETENCY EVALUATIONS (Évaluations des compétences)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS competency_evaluations (
+CREATE TABLE competency_evaluations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_id UUID REFERENCES users(id) ON DELETE CASCADE,
     competency_id UUID REFERENCES competencies(id) ON DELETE CASCADE,
