@@ -30,6 +30,9 @@ const paymentController = require('../controllers/paymentController');
 const settingsController = require('../controllers/settingsController');
 const gradesController = require('../controllers/gradesController');
 const competencyController = require('../controllers/competencyController');
+const reportCardController = require('../controllers/reportCardController');
+const badgeController = require('../controllers/badgeController');
+const analyticsController = require('../controllers/analyticsController');
 
 // Import validators
 const {
@@ -1496,5 +1499,62 @@ router.get(
   authenticate,
   competencyController.getStudentCompetencySummary
 );
+
+/**
+ * Report Card Routes
+ */
+
+/**
+ * @route   POST /api/report-cards/generate
+ * @desc    Generate report cards for a class
+ * @access  Private (Admin)
+ */
+router.post(
+  '/report-cards/generate',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  reportCardController.generateClassReportCards
+);
+
+/**
+ * @route   GET /api/report-cards
+ * @desc    Get report cards for a class
+ * @access  Private (Admin, Teacher)
+ */
+router.get(
+  '/report-cards',
+  authenticate,
+  authorize('admin', 'superadmin', 'teacher'),
+  reportCardController.getClassReportCards
+);
+
+/**
+ * @route   GET /api/report-cards/:id
+ * @desc    Get report card details
+ * @access  Private
+ */
+router.get(
+  '/report-cards/:id',
+  authenticate,
+  validateUUID('id'),
+  reportCardController.getReportCardDetails
+);
+
+reportCardController.getReportCardDetails
+);
+
+/**
+ * Advanced Features Routes
+ */
+
+// Badges
+router.get('/badges', authenticate, badgeController.getAllBadges);
+router.post('/badges', authenticate, authorize('admin', 'superadmin'), badgeController.createBadge);
+router.post('/badges/award', authenticate, authorize('admin', 'superadmin', 'teacher'), badgeController.awardBadge);
+router.get('/students/:student_id/badges', authenticate, badgeController.getStudentBadges);
+
+// Analytics
+router.get('/analytics/predictions/:student_id', authenticate, authorize('admin', 'superadmin', 'teacher'), analyticsController.getStudentPredictions);
+router.get('/analytics/scholarships', authenticate, authorize('admin', 'superadmin'), analyticsController.getScholarshipCandidates);
 
 module.exports = router;
