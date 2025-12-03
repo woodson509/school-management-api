@@ -1540,9 +1540,6 @@ router.get(
   reportCardController.getReportCardDetails
 );
 
-reportCardController.getReportCardDetails
-);
-
 /**
  * Advanced Features Routes
  */
