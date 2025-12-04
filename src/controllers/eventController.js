@@ -9,20 +9,34 @@ const eventController = {
             const schoolId = req.user.school_id;
             const { month, year } = req.query;
 
-            let query = `
-                SELECT * FROM calendar_events 
-                WHERE school_id = $1
-            `;
-            const params = [schoolId];
+            let query;
+            let params = [];
 
-            // Filter by month/year if provided
-            if (month && year) {
-                query += ` AND (
-                    (EXTRACT(MONTH FROM start_date) = $2 AND EXTRACT(YEAR FROM start_date) = $3)
-                    OR (EXTRACT(MONTH FROM end_date) = $2 AND EXTRACT(YEAR FROM end_date) = $3)
-                    OR (start_date <= make_date($3::int, $2::int, 1) AND end_date >= make_date($3::int, $2::int, 1))
-                )`;
-                params.push(month, year);
+            // Handle case where user doesn't have a school_id (superadmin)
+            if (schoolId) {
+                query = `SELECT * FROM calendar_events WHERE school_id = $1`;
+                params = [schoolId];
+
+                if (month && year) {
+                    query += ` AND (
+                        (EXTRACT(MONTH FROM start_date) = $2 AND EXTRACT(YEAR FROM start_date) = $3)
+                        OR (EXTRACT(MONTH FROM end_date) = $2 AND EXTRACT(YEAR FROM end_date) = $3)
+                        OR (start_date <= make_date($3::int, $2::int, 1) AND end_date >= make_date($3::int, $2::int, 1))
+                    )`;
+                    params.push(month, year);
+                }
+            } else {
+                // Superadmin without school_id - return all events
+                query = `SELECT * FROM calendar_events WHERE 1=1`;
+
+                if (month && year) {
+                    query += ` AND (
+                        (EXTRACT(MONTH FROM start_date) = $1 AND EXTRACT(YEAR FROM start_date) = $2)
+                        OR (EXTRACT(MONTH FROM end_date) = $1 AND EXTRACT(YEAR FROM end_date) = $2)
+                        OR (start_date <= make_date($2::int, $1::int, 1) AND end_date >= make_date($2::int, $1::int, 1))
+                    )`;
+                    params.push(month, year);
+                }
             }
 
             query += ' ORDER BY start_date ASC';
