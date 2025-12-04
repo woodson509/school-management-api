@@ -1614,4 +1614,7 @@ router.post('/events', authenticate, authorize('admin', 'superadmin'), eventCont
 router.put('/events/:id', authenticate, authorize('admin', 'superadmin'), eventController.updateEvent);
 router.delete('/events/:id', authenticate, authorize('admin', 'superadmin'), eventController.deleteEvent);
 
+// Migrations
+router.post('/migrations/announcements', authenticate, authorize('superadmin'), migrationController.runAnnouncementsMigration);
+
 module.exports = router;
