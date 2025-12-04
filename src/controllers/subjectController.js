@@ -12,7 +12,6 @@ const db = require('../config/database');
 exports.createSubject = async (req, res) => {
     try {
         const { name, code, description, credits } = req.body;
-        const pool = await db.getPool();
 
         const query = `
       INSERT INTO subjects (name, code, description, credits, created_by)
@@ -20,7 +19,7 @@ exports.createSubject = async (req, res) => {
       RETURNING *
     `;
 
-        const result = await pool.query(query, [
+        const result = await db.query(query, [
             name,
             code,
             description || null,
@@ -49,7 +48,6 @@ exports.createSubject = async (req, res) => {
  */
 exports.getSubjects = async (req, res) => {
     try {
-        const pool = await db.getPool();
         const { page = 1, limit = 50, search } = req.query;
         const offset = (page - 1) * limit;
 
@@ -70,14 +68,14 @@ exports.getSubjects = async (req, res) => {
         query += ` ORDER BY s.name LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(limit, offset);
 
-        const result = await pool.query(query, params);
+        const result = await db.query(query, params);
 
         // Get total count
         const countQuery = search
             ? `SELECT COUNT(*) FROM subjects WHERE name ILIKE $1 OR code ILIKE $1`
             : `SELECT COUNT(*) FROM subjects`;
         const countParams = search ? [`%${search}%`] : [];
-        const countResult = await pool.query(countQuery, countParams);
+        const countResult = await db.query(countQuery, countParams);
         const total = parseInt(countResult.rows[0].count);
 
         res.json({
@@ -107,7 +105,6 @@ exports.getSubjects = async (req, res) => {
 exports.getSubjectById = async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await db.getPool();
 
         const query = `
       SELECT s.*, u.full_name as created_by_name
@@ -116,7 +113,7 @@ exports.getSubjectById = async (req, res) => {
       WHERE s.id = $1
     `;
 
-        const result = await pool.query(query, [id]);
+        const result = await db.query(query, [id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({
@@ -147,7 +144,6 @@ exports.updateSubject = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, code, description, credits } = req.body;
-        const pool = await db.getPool();
 
         const query = `
       UPDATE subjects
@@ -157,7 +153,7 @@ exports.updateSubject = async (req, res) => {
       RETURNING *
     `;
 
-        const result = await pool.query(query, [
+        const result = await db.query(query, [
             name,
             code,
             description,
@@ -194,10 +190,9 @@ exports.updateSubject = async (req, res) => {
 exports.deleteSubject = async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await db.getPool();
 
         const query = `DELETE FROM subjects WHERE id = $1 RETURNING *`;
-        const result = await pool.query(query, [id]);
+        const result = await db.query(query, [id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({
