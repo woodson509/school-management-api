@@ -1090,7 +1090,6 @@ router.post(
 
 const lessonController = require('../controllers/lessonController');
 const enrollmentController = require('../controllers/enrollmentController');
-const announcementController = require('../controllers/announcementController');
 
 // Lesson routes
 router.get('/courses/:courseId/lessons', authenticate, lessonController.getLessonsByCourse);
