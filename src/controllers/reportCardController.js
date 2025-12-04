@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const db = require('../config/database');
 const { validateUUID } = require('../utils/validation');
 
 const reportCardController = {
@@ -7,7 +7,7 @@ const reportCardController = {
      * Calculates averages, ranks, and class statistics
      */
     generateClassReportCards: async (req, res) => {
-        const client = await db.connect();
+        const client = await db.getClient();
         try {
             const { class_id, report_period_id } = req.body;
 
