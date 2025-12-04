@@ -11,19 +11,16 @@ const db = require('../config/database');
  */
 exports.getAnnouncements = async (req, res) => {
     try {
-        const { school_id, course_id, limit = 20 } = req.query;
+        const { school_id, limit = 20 } = req.query;
         const pool = await db.getPool();
 
         let query = `
       SELECT 
         a.*,
-        u.full_name as created_by_name,
-        c.title as course_title
+        u.full_name as created_by_name
       FROM announcements a
-      JOIN users u ON a.created_by = u.id
-      LEFT JOIN courses c ON a.course_id = c.id
-      WHERE a.is_published = true
-        AND (a.expires_at IS NULL OR a.expires_at > NOW())
+      LEFT JOIN users u ON a.created_by = u.id
+      WHERE (a.expires_at IS NULL OR a.expires_at > NOW())
     `;
 
         const params = [];
@@ -37,12 +34,6 @@ exports.getAnnouncements = async (req, res) => {
         } else if (school_id) {
             query += ` AND a.school_id = $${paramIndex}`;
             params.push(school_id);
-            paramIndex++;
-        }
-
-        if (course_id) {
-            query += ` AND (a.course_id = $${paramIndex} OR a.course_id IS NULL)`;
-            params.push(course_id);
             paramIndex++;
         }
 
@@ -73,7 +64,6 @@ exports.createAnnouncement = async (req, res) => {
     try {
         const {
             school_id,
-            course_id,
             title,
             content,
             priority,
@@ -93,21 +83,20 @@ exports.createAnnouncement = async (req, res) => {
 
         const query = `
       INSERT INTO announcements (
-        school_id, course_id, created_by, title, content,
+        school_id, created_by, title, content,
         priority, is_pinned, attachments, target_audience,
         is_published, published_at, expires_at, created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, NOW(), $10, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, NOW(), $9, NOW(), NOW())
       RETURNING *
     `;
 
         const result = await pool.query(query, [
             targetSchoolId,
-            course_id || null,
             req.user.id,
             title,
             content,
-            priority || 'normal',
+            priority || 'medium',
             is_pinned || false,
             attachments ? JSON.stringify(attachments) : null,
             target_audience || 'all',
