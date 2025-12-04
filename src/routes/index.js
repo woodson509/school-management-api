@@ -33,6 +33,8 @@ const competencyController = require('../controllers/competencyController');
 const reportCardController = require('../controllers/reportCardController');
 const badgeController = require('../controllers/badgeController');
 const analyticsController = require('../controllers/analyticsController');
+const announcementController = require('../controllers/announcementController');
+const eventController = require('../controllers/eventController');
 
 // Import validators
 const {
