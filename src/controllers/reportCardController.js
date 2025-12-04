@@ -208,7 +208,7 @@ const reportCardController = {
             const { class_id, report_period_id } = req.query;
 
             const query = `
-        SELECT rc.*, u.full_name as student_name, u.student_id as student_code
+        SELECT rc.*, u.full_name as student_name, u.email as student_email
         FROM report_cards rc
         JOIN users u ON rc.student_id = u.id
         WHERE rc.class_id = $1 AND rc.report_period_id = $2
@@ -233,7 +233,7 @@ const reportCardController = {
             // Get card info
             const cardQuery = `
         SELECT rc.*, 
-               u.full_name as student_name, u.student_id as student_code,
+               u.full_name as student_name, u.email as student_email,
                c.name as class_name,
                rp.name as period_name, rp.school_year
         FROM report_cards rc
