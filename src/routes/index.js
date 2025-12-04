@@ -616,6 +616,55 @@ router.delete(
 );
 
 /**
+ * @route   GET /api/announcements
+ * @desc    Get all announcements
+ * @access  Private
+ */
+router.get(
+  '/announcements',
+  authenticate,
+  announcementController.getAnnouncements
+);
+
+/**
+ * @route   POST /api/announcements
+ * @desc    Create a new announcement
+ * @access  Private (Admin, Superadmin)
+ */
+router.post(
+  '/announcements',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  announcementController.createAnnouncement
+);
+
+/**
+ * @route   PUT /api/announcements/:id
+ * @desc    Update an announcement
+ * @access  Private (Admin, Superadmin)
+ */
+router.put(
+  '/announcements/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  announcementController.updateAnnouncement
+);
+
+/**
+ * @route   DELETE /api/announcements/:id
+ * @desc    Delete an announcement
+ * @access  Private (Admin, Superadmin)
+ */
+router.delete(
+  '/announcements/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  announcementController.deleteAnnouncement
+);
+
+/**
  * @route   PATCH /api/users/:id/password
  * @desc    Change user password
  * @access  Private (Admin or own password)
@@ -1557,7 +1606,9 @@ router.get('/analytics/scholarships', authenticate, authorize('admin', 'superadm
 
 // Calendar Events
 const eventController = require('../controllers/eventController');
-router.get('/events', authenticate, eventController.getEvents);
+const announcementController = require('../controllers/announcementController');
+
+// Middleware.get('/events', authenticate, eventController.getEvents);
 router.get('/events/:id', authenticate, eventController.getEventById);
 router.post('/events', authenticate, authorize('admin', 'superadmin'), eventController.createEvent);
 router.put('/events/:id', authenticate, authorize('admin', 'superadmin'), eventController.updateEvent);
