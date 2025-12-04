@@ -312,12 +312,14 @@ exports.runAnnouncementsMigration = async (req, res) => {
 
     console.log('🚀 Starting Announcements System Migration...');
 
-    // 1. Create announcements table
+    // Drop existing table to start fresh
+    await client.query(`DROP TABLE IF EXISTS announcements CASCADE;`);
+
+    // Create announcements table
     await client.query(`
-      CREATE TABLE IF NOT EXISTS announcements (
+      CREATE TABLE announcements (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
-        course_id UUID,
         created_by UUID REFERENCES users(id),
         title VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
@@ -325,19 +327,18 @@ exports.runAnnouncementsMigration = async (req, res) => {
         is_pinned BOOLEAN DEFAULT false,
         attachments JSONB,
         target_audience VARCHAR(50) DEFAULT 'all',
-        is_published BOOLEAN DEFAULT false,
-        published_at TIMESTAMP,
+        is_published BOOLEAN DEFAULT true,
+        published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expires_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // 2. Create indexes
+    // Create indexes
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_announcements_school ON announcements(school_id);
-      CREATE INDEX IF NOT EXISTS idx_announcements_course ON announcements(course_id);
-      CREATE INDEX IF NOT EXISTS idx_announcements_created_by ON announcements(created_by);
+      CREATE INDEX idx_announcements_school ON announcements(school_id);
+      CREATE INDEX idx_announcements_created_by ON announcements(created_by);
     `);
 
     console.log('✅ Announcements System Migration Completed Successfully');
