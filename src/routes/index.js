@@ -1605,8 +1605,7 @@ router.get('/analytics/predictions/:student_id', authenticate, authorize('admin'
 router.get('/analytics/scholarships', authenticate, authorize('admin', 'superadmin'), analyticsController.getScholarshipCandidates);
 
 // Calendar Events
-const eventController = require('../controllers/eventController');
-const announcementController = require('../controllers/announcementController');
+
 
 // Middleware.get('/events', authenticate, eventController.getEvents);
 router.get('/events/:id', authenticate, eventController.getEventById);
