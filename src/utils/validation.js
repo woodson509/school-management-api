@@ -193,14 +193,11 @@ const validateSchool = [
     .isLength({ max: 255 })
     .withMessage('Name must not exceed 255 characters'),
   body('address')
-    .trim()
-    .notEmpty()
-    .withMessage('Address is required'),
+    .optional()
+    .trim(),
   body('phone')
     .optional()
-    .trim()
-    .matches(/^[0-9\s\-\+\(\)]+$/)
-    .withMessage('Invalid phone number format'),
+    .trim(),
   body('email')
     .optional()
     .isEmail()
@@ -208,9 +205,7 @@ const validateSchool = [
     .withMessage('Valid email is required'),
   body('website')
     .optional()
-    .trim()
-    .isURL()
-    .withMessage('Valid URL is required'),
+    .trim(),
   body('principal_name')
     .optional()
     .trim(),
