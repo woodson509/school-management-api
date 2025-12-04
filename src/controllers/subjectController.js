@@ -11,20 +11,18 @@ const db = require('../config/database');
  */
 exports.createSubject = async (req, res) => {
     try {
-        const { name, code, description, credits } = req.body;
+        const { name, code, description } = req.body;
 
         const query = `
-      INSERT INTO subjects (name, code, description, credits, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO subjects (name, code, description)
+      VALUES ($1, $2, $3)
       RETURNING *
     `;
 
         const result = await db.query(query, [
             name,
             code,
-            description || null,
-            credits || 1,
-            req.user.id
+            description || null
         ]);
 
         res.status(201).json({
@@ -52,20 +50,17 @@ exports.getSubjects = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-      SELECT s.*, u.full_name as created_by_name
-      FROM subjects s
-      LEFT JOIN users u ON s.created_by = u.id
-      WHERE 1=1
+      SELECT * FROM subjects WHERE 1=1
     `;
 
         const params = [];
 
         if (search) {
-            query += ` AND (s.name ILIKE $1 OR s.code ILIKE $1)`;
+            query += ` AND (name ILIKE $1 OR code ILIKE $1)`;
             params.push(`%${search}%`);
         }
 
-        query += ` ORDER BY s.name LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        query += ` ORDER BY name LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(limit, offset);
 
         const result = await db.query(query, params);
@@ -106,12 +101,7 @@ exports.getSubjectById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const query = `
-      SELECT s.*, u.full_name as created_by_name
-      FROM subjects s
-      LEFT JOIN users u ON s.created_by = u.id
-      WHERE s.id = $1
-    `;
+        const query = `SELECT * FROM subjects WHERE id = $1`;
 
         const result = await db.query(query, [id]);
 
@@ -143,13 +133,12 @@ exports.getSubjectById = async (req, res) => {
 exports.updateSubject = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, code, description, credits } = req.body;
+        const { name, code, description } = req.body;
 
         const query = `
       UPDATE subjects
-      SET name = $1, code = $2, description = $3, 
-          credits = $4, updated_at = NOW()
-      WHERE id = $5
+      SET name = $1, code = $2, description = $3, updated_at = NOW()
+      WHERE id = $4
       RETURNING *
     `;
 
@@ -157,7 +146,6 @@ exports.updateSubject = async (req, res) => {
             name,
             code,
             description,
-            credits,
             id
         ]);
 
