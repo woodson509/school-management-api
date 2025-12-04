@@ -1555,4 +1555,12 @@ router.get('/analytics/stats', authenticate, authorize('admin', 'superadmin'), a
 router.get('/analytics/predictions/:student_id', authenticate, authorize('admin', 'superadmin', 'teacher'), analyticsController.getStudentPredictions);
 router.get('/analytics/scholarships', authenticate, authorize('admin', 'superadmin'), analyticsController.getScholarshipCandidates);
 
+// Calendar Events
+const eventController = require('../controllers/eventController');
+router.get('/events', authenticate, eventController.getEvents);
+router.get('/events/:id', authenticate, eventController.getEventById);
+router.post('/events', authenticate, authorize('admin', 'superadmin'), eventController.createEvent);
+router.put('/events/:id', authenticate, authorize('admin', 'superadmin'), eventController.updateEvent);
+router.delete('/events/:id', authenticate, authorize('admin', 'superadmin'), eventController.deleteEvent);
+
 module.exports = router;
