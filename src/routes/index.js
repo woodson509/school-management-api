@@ -1551,6 +1551,7 @@ router.post('/badges/award', authenticate, authorize('admin', 'superadmin', 'tea
 router.get('/students/:student_id/badges', authenticate, badgeController.getStudentBadges);
 
 // Analytics
+router.get('/analytics/stats', authenticate, authorize('admin', 'superadmin'), analyticsController.getSchoolStats);
 router.get('/analytics/predictions/:student_id', authenticate, authorize('admin', 'superadmin', 'teacher'), analyticsController.getStudentPredictions);
 router.get('/analytics/scholarships', authenticate, authorize('admin', 'superadmin'), analyticsController.getScholarshipCandidates);
 
