@@ -1606,9 +1606,7 @@ router.get('/analytics/predictions/:student_id', authenticate, authorize('admin'
 router.get('/analytics/scholarships', authenticate, authorize('admin', 'superadmin'), analyticsController.getScholarshipCandidates);
 
 // Calendar Events
-
-
-// Middleware.get('/events', authenticate, eventController.getEvents);
+router.get('/events', authenticate, eventController.getEvents);
 router.get('/events/:id', authenticate, eventController.getEventById);
 router.post('/events', authenticate, authorize('admin', 'superadmin'), eventController.createEvent);
 router.put('/events/:id', authenticate, authorize('admin', 'superadmin'), eventController.updateEvent);
