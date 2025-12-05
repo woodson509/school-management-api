@@ -128,6 +128,14 @@ const getExams = async (req, res) => {
     if (req.user.role === 'teacher') {
       query += ` AND c.school_id = $${paramCount}`;
       params.push(req.user.school_id);
+      paramCount++;
+    }
+
+    // Admins see exams from their school only
+    if (req.user.role === 'admin') {
+      query += ` AND c.school_id = $${paramCount}`;
+      params.push(req.user.school_id);
+      paramCount++;
     }
 
     query += ' ORDER BY e.created_at DESC';

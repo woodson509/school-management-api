@@ -149,6 +149,14 @@ const getCourses = async (req, res) => {
     if (req.user.role === 'student' || req.user.role === 'teacher') {
       query += ` AND c.school_id = $${paramCount}`;
       params.push(req.user.school_id);
+      paramCount++;
+    }
+
+    // Admins see only their school's courses
+    if (req.user.role === 'admin') {
+      query += ` AND c.school_id = $${paramCount}`;
+      params.push(req.user.school_id);
+      paramCount++;
     }
 
     query += ' ORDER BY c.created_at DESC';
