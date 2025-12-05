@@ -478,15 +478,15 @@ exports.seedDemoData = async (req, res) => {
 
     // 7. Create Courses
     const courses = [
-      { title: 'Mathématiques 6ème', desc: 'Cours de maths', teacherIdx: 0 },
-      { title: 'Français 6ème', desc: 'Grammaire et littérature', teacherIdx: 1 },
-      { title: 'Sciences 6ème', desc: 'Introduction aux sciences', teacherIdx: 2 }
+      { title: 'Mathématiques 6ème', code: 'MATH6', desc: 'Cours de maths', teacherIdx: 0 },
+      { title: 'Français 6ème', code: 'FRAN6', desc: 'Grammaire et littérature', teacherIdx: 1 },
+      { title: 'Sciences 6ème', code: 'SCI6', desc: 'Introduction aux sciences', teacherIdx: 2 }
     ];
     for (const c of courses) {
       await client.query(`
-        INSERT INTO courses (title, description, teacher_id, school_id, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, NOW(), NOW())
-      `, [c.title, c.desc, teacherIds[c.teacherIdx], schoolId]);
+        INSERT INTO courses (title, code, description, teacher_id, school_id, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      `, [c.title, c.code, c.desc, teacherIds[c.teacherIdx], schoolId]);
     }
 
     // 8. Create Announcements
