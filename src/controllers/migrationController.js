@@ -424,10 +424,10 @@ exports.seedDemoData = async (req, res) => {
 
     for (const sub of subjects) {
       await client.query(`
-        INSERT INTO subjects (name, code, created_by, created_at, updated_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
+        INSERT INTO subjects (name, code, created_at, updated_at)
+        VALUES ($1, $2, NOW(), NOW())
         ON CONFLICT (code) DO NOTHING
-      `, [sub.name, sub.code, adminId]);
+      `, [sub.name, sub.code]);
     }
 
     // 4. Create Classes
