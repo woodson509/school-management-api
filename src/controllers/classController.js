@@ -15,8 +15,8 @@ exports.createClass = async (req, res) => {
         const pool = await db.getPool();
 
         const query = `
-      INSERT INTO classes (name, grade_level, school_year, teacher_id, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO classes (name, grade_level, school_year, teacher_id, created_by, school_id)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
 
@@ -25,7 +25,8 @@ exports.createClass = async (req, res) => {
             grade_level,
             school_year,
             teacher_id || null,
-            req.user.id
+            req.user.id,
+            req.user.school_id
         ]);
 
         res.status(201).json({
@@ -75,6 +76,13 @@ exports.getClasses = async (req, res) => {
             paramIndex++;
         }
 
+        // Admins and teachers see only their school's classes
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
+            query += ` AND c.school_id = $${paramIndex}`;
+            params.push(req.user.school_id);
+            paramIndex++;
+        }
+
         query += ` ORDER BY c.grade_level, c.name LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
         params.push(limit, offset);
 
@@ -94,6 +102,13 @@ exports.getClasses = async (req, res) => {
         if (school_year) {
             countQuery += ` AND school_year = $${countIndex}`;
             countParams.push(school_year);
+            countIndex++;
+        }
+
+        // Same school filter for count
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
+            countQuery += ` AND school_id = $${countIndex}`;
+            countParams.push(req.user.school_id);
         }
 
         const countResult = await pool.query(countQuery, countParams);

@@ -531,3 +531,53 @@ exports.seedDemoData = async (req, res) => {
     if (client) client.release();
   }
 };
+
+/**
+ * Add school_id to classes table for multi-tenancy
+ * POST /api/migrations/add-school-to-classes
+ */
+exports.addSchoolToClasses = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('🏫 Adding school_id to classes table...');
+
+    // Add school_id column if it doesn't exist
+    await client.query(`
+      ALTER TABLE classes 
+      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id) ON DELETE CASCADE
+    `);
+
+    // Update existing classes with school_id from their creator
+    await client.query(`
+      UPDATE classes c
+      SET school_id = u.school_id
+      FROM users u
+      WHERE c.created_by = u.id AND c.school_id IS NULL
+    `);
+
+    // Create index for performance
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_classes_school ON classes(school_id)
+    `);
+
+    console.log('✅ Classes table updated with school_id');
+
+    res.json({
+      success: true,
+      message: 'School_id added to classes table successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
