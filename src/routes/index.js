@@ -1616,5 +1616,6 @@ router.delete('/events/:id', authenticate, authorize('admin', 'superadmin'), eve
 
 // Migrations
 router.post('/migrations/announcements', authenticate, authorize('superadmin'), migrationController.runAnnouncementsMigration);
+router.post('/migrations/seed-demo', authenticate, authorize('superadmin'), migrationController.seedDemoData);
 
 module.exports = router;

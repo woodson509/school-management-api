@@ -359,3 +359,175 @@ exports.runAnnouncementsMigration = async (req, res) => {
     if (client) client.release();
   }
 };
+
+/**
+ * Seed demo data for admin user
+ * POST /api/migrations/seed-demo
+ */
+exports.seedDemoData = async (req, res) => {
+  let client;
+  const bcrypt = require('bcryptjs');
+
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('🌱 Starting Demo Data Seeding...');
+
+    // 1. Create Admin User
+    const adminPassword = await bcrypt.hash('admin123', 10);
+    const adminResult = await client.query(`
+      INSERT INTO users (email, password, full_name, role, phone, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      ON CONFLICT (email) DO UPDATE SET
+        password = EXCLUDED.password,
+        full_name = EXCLUDED.full_name,
+        role = EXCLUDED.role
+      RETURNING id
+    `, ['admin@example.com', adminPassword, 'Jean-Pierre Duval', 'admin', '+509 3456 7890']);
+    const adminId = adminResult.rows[0].id;
+
+    // 2. Create School
+    const schoolResult = await client.query(`
+      INSERT INTO schools (name, address, phone, email, website, principal_name, created_by, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      ON CONFLICT DO NOTHING
+      RETURNING id
+    `, [
+      'Collège Saint-Louis de Gonzague',
+      '18, Rue du Centre, Pétion-Ville, Haïti',
+      '+509 2941 1234',
+      'info@stlouis.edu.ht',
+      'https://stlouis.edu.ht',
+      'Fr. Michel Jean',
+      adminId
+    ]);
+
+    let schoolId;
+    if (schoolResult.rows.length > 0) {
+      schoolId = schoolResult.rows[0].id;
+    } else {
+      const existing = await client.query(`SELECT id FROM schools LIMIT 1`);
+      schoolId = existing.rows[0]?.id;
+    }
+
+    await client.query(`UPDATE users SET school_id = $1 WHERE id = $2`, [schoolId, adminId]);
+
+    // 3. Create Subjects
+    const subjects = [
+      { name: 'Mathématiques', code: 'MATH', credits: 4 },
+      { name: 'Français', code: 'FRAN', credits: 4 },
+      { name: 'Sciences', code: 'PHYS', credits: 3 },
+      { name: 'Histoire', code: 'HIST', credits: 2 },
+      { name: 'Anglais', code: 'ANGL', credits: 3 }
+    ];
+
+    for (const sub of subjects) {
+      await client.query(`
+        INSERT INTO subjects (name, code, credits, created_by, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        ON CONFLICT (code) DO NOTHING
+      `, [sub.name, sub.code, sub.credits, adminId]);
+    }
+
+    // 4. Create Classes
+    const classes = ['6ème A', '6ème B', '5ème A', '4ème A', '3ème A'];
+    const classIds = [];
+    for (const cls of classes) {
+      const r = await client.query(`
+        INSERT INTO classes (name, grade_level, school_year, created_by, created_at, updated_at)
+        VALUES ($1, $2, '2024-2025', $3, NOW(), NOW())
+        RETURNING id
+      `, [cls, cls.split(' ')[0], adminId]);
+      classIds.push(r.rows[0].id);
+    }
+
+    // 5. Create Teachers
+    const teacherPassword = await bcrypt.hash('teacher123', 10);
+    const teachers = [
+      { email: 'prof.math@example.com', name: 'Marc Antoine' },
+      { email: 'prof.francais@example.com', name: 'Marie Claire' },
+      { email: 'prof.sciences@example.com', name: 'Pierre Paul' }
+    ];
+    const teacherIds = [];
+    for (const t of teachers) {
+      const r = await client.query(`
+        INSERT INTO users (email, password, full_name, role, school_id, created_at, updated_at)
+        VALUES ($1, $2, $3, 'teacher', $4, NOW(), NOW())
+        ON CONFLICT (email) DO UPDATE SET full_name = EXCLUDED.full_name
+        RETURNING id
+      `, [t.email, teacherPassword, t.name, schoolId]);
+      teacherIds.push(r.rows[0].id);
+    }
+
+    // 6. Create Students
+    const studentPassword = await bcrypt.hash('student123', 10);
+    const studentNames = [
+      'Jean-Baptiste Marcel', 'Marie-Louise Pierre', 'Joseph François', 'Anne-Marie Dupont',
+      'Paul Jean', 'Claire Saint-Louis', 'Michel Beauvoir', 'Sophie Charles',
+      'André Bellefleur', 'Martine Célestin', 'Robert Duval', 'Isabelle Lafontaine',
+      'Emmanuel Toussaint', 'Nathalie Mercier', 'Jacques Denis', 'Carole Étienne'
+    ];
+    for (let i = 0; i < studentNames.length; i++) {
+      await client.query(`
+        INSERT INTO users (email, password, full_name, role, school_id, created_at, updated_at)
+        VALUES ($1, $2, $3, 'student', $4, NOW(), NOW())
+        ON CONFLICT (email) DO UPDATE SET full_name = EXCLUDED.full_name
+      `, [`student${i + 1}@example.com`, studentPassword, studentNames[i], schoolId]);
+    }
+
+    // 7. Create Courses
+    const courses = [
+      { title: 'Mathématiques 6ème', desc: 'Cours de maths', teacherIdx: 0 },
+      { title: 'Français 6ème', desc: 'Grammaire et littérature', teacherIdx: 1 },
+      { title: 'Sciences 6ème', desc: 'Introduction aux sciences', teacherIdx: 2 }
+    ];
+    for (const c of courses) {
+      await client.query(`
+        INSERT INTO courses (title, description, teacher_id, created_at, updated_at)
+        VALUES ($1, $2, $3, NOW(), NOW())
+      `, [c.title, c.desc, teacherIds[c.teacherIdx]]);
+    }
+
+    // 8. Create Announcements
+    const announcements = [
+      { title: 'Rentrée Scolaire 2024-2025', content: 'La rentrée est prévue pour le 2 septembre 2024.', priority: 'high', pinned: true },
+      { title: 'Examens 1er Trimestre', content: 'Les examens auront lieu du 16 au 20 décembre.', priority: 'high', pinned: true },
+      { title: 'Réunion Parents-Professeurs', content: 'Samedi 14 décembre à 9h00.', priority: 'medium', pinned: false },
+      { title: 'Activités Sportives', content: 'Championnat de football ce vendredi.', priority: 'low', pinned: false }
+    ];
+    for (const a of announcements) {
+      await client.query(`
+        INSERT INTO announcements (school_id, created_by, title, content, priority, is_pinned, target_audience, is_published, published_at, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, 'all', true, NOW(), NOW(), NOW())
+      `, [schoolId, adminId, a.title, a.content, a.priority, a.pinned]);
+    }
+
+    console.log('✅ Demo Data Seeding Completed!');
+
+    res.json({
+      success: true,
+      message: 'Demo data seeded successfully',
+      data: {
+        admin: 'admin@example.com / admin123',
+        teachers: 'prof.math@example.com / teacher123',
+        students: 'student1@example.com to student16@example.com / student123',
+        school: 'Collège Saint-Louis de Gonzague',
+        classes: classes.length,
+        subjects: subjects.length,
+        courses: courses.length,
+        announcements: announcements.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Seeding error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Seeding failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
