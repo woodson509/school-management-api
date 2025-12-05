@@ -1619,5 +1619,7 @@ router.post('/migrations/announcements', authenticate, authorize('superadmin'), 
 router.post('/migrations/seed-demo', authenticate, authorize('superadmin'), migrationController.seedDemoData);
 router.post('/migrations/add-school-to-classes', authenticate, authorize('superadmin'), migrationController.addSchoolToClasses);
 router.post('/migrations/add-school-to-pedagogy', authenticate, authorize('superadmin'), migrationController.addSchoolToPedagogy);
+router.post('/migrations/add-school-to-subjects', authenticate, authorize('superadmin'), migrationController.addSchoolToSubjects);
 
 module.exports = router;
+

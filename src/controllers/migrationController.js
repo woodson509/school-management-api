@@ -664,3 +664,47 @@ exports.addSchoolToPedagogy = async (req, res) => {
     if (client) client.release();
   }
 };
+
+/**
+ * Add school_id to subjects table
+ * POST /api/migrations/add-school-to-subjects
+ */
+exports.addSchoolToSubjects = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('📚 Adding school_id to subjects table...');
+
+    // 1. Add school_id column if it doesn't exist
+    await client.query(`
+      ALTER TABLE subjects 
+      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id) ON DELETE CASCADE
+    `);
+    console.log('✅ Added school_id to subjects');
+
+    // 2. Create index for performance
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_subjects_school ON subjects(school_id)
+    `);
+    console.log('✅ Created index');
+
+    console.log('✅ Subjects table updated with school_id');
+
+    res.json({
+      success: true,
+      message: 'School_id added to subjects table successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};

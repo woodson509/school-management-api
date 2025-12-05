@@ -14,15 +14,16 @@ exports.createSubject = async (req, res) => {
         const { name, code, description } = req.body;
 
         const query = `
-      INSERT INTO subjects (name, code, description)
-      VALUES ($1, $2, $3)
+      INSERT INTO subjects (name, code, description, school_id)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
         const result = await db.query(query, [
             name,
             code,
-            description || null
+            description || null,
+            req.user.school_id
         ]);
 
         res.status(201).json({
@@ -54,22 +55,42 @@ exports.getSubjects = async (req, res) => {
     `;
 
         const params = [];
+        let paramCount = 1;
 
         if (search) {
-            query += ` AND (name ILIKE $1 OR code ILIKE $1)`;
+            query += ` AND (name ILIKE $${paramCount} OR code ILIKE $${paramCount})`;
             params.push(`%${search}%`);
+            paramCount++;
         }
 
-        query += ` ORDER BY name LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        // Admin and teacher see only their school's subjects
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
+            query += ` AND (school_id = $${paramCount} OR school_id IS NULL)`;
+            params.push(req.user.school_id);
+            paramCount++;
+        }
+
+        query += ` ORDER BY name LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
         params.push(limit, offset);
 
         const result = await db.query(query, params);
 
-        // Get total count
-        const countQuery = search
-            ? `SELECT COUNT(*) FROM subjects WHERE name ILIKE $1 OR code ILIKE $1`
-            : `SELECT COUNT(*) FROM subjects`;
-        const countParams = search ? [`%${search}%`] : [];
+        // Get total count with same filter
+        let countQuery = 'SELECT COUNT(*) FROM subjects WHERE 1=1';
+        const countParams = [];
+        let countIndex = 1;
+
+        if (search) {
+            countQuery += ` AND (name ILIKE $${countIndex} OR code ILIKE $${countIndex})`;
+            countParams.push(`%${search}%`);
+            countIndex++;
+        }
+
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
+            countQuery += ` AND (school_id = $${countIndex} OR school_id IS NULL)`;
+            countParams.push(req.user.school_id);
+        }
+
         const countResult = await db.query(countQuery, countParams);
         const total = parseInt(countResult.rows[0].count);
 
