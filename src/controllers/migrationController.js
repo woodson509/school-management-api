@@ -415,19 +415,19 @@ exports.seedDemoData = async (req, res) => {
 
     // 3. Create Subjects
     const subjects = [
-      { name: 'Mathématiques', code: 'MATH', credits: 4 },
-      { name: 'Français', code: 'FRAN', credits: 4 },
-      { name: 'Sciences', code: 'PHYS', credits: 3 },
-      { name: 'Histoire', code: 'HIST', credits: 2 },
-      { name: 'Anglais', code: 'ANGL', credits: 3 }
+      { name: 'Mathématiques', code: 'MATH' },
+      { name: 'Français', code: 'FRAN' },
+      { name: 'Sciences', code: 'PHYS' },
+      { name: 'Histoire', code: 'HIST' },
+      { name: 'Anglais', code: 'ANGL' }
     ];
 
     for (const sub of subjects) {
       await client.query(`
-        INSERT INTO subjects (name, code, credits, created_by, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        INSERT INTO subjects (name, code, created_by, created_at, updated_at)
+        VALUES ($1, $2, $3, NOW(), NOW())
         ON CONFLICT (code) DO NOTHING
-      `, [sub.name, sub.code, sub.credits, adminId]);
+      `, [sub.name, sub.code, adminId]);
     }
 
     // 4. Create Classes
