@@ -1618,5 +1618,6 @@ router.delete('/events/:id', authenticate, authorize('admin', 'superadmin'), eve
 router.post('/migrations/announcements', authenticate, authorize('superadmin'), migrationController.runAnnouncementsMigration);
 router.post('/migrations/seed-demo', authenticate, authorize('superadmin'), migrationController.seedDemoData);
 router.post('/migrations/add-school-to-classes', authenticate, authorize('superadmin'), migrationController.addSchoolToClasses);
+router.post('/migrations/add-school-to-pedagogy', authenticate, authorize('superadmin'), migrationController.addSchoolToPedagogy);
 
 module.exports = router;

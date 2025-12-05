@@ -43,6 +43,13 @@ exports.getCompetencies = async (req, res) => {
             paramCount++;
         }
 
+        // Admin and teacher see only their school's competencies
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
+            query += ` AND (comp.school_id = $${paramCount} OR comp.school_id IS NULL)`;
+            params.push(req.user.school_id);
+            paramCount++;
+        }
+
         query += ' ORDER BY comp.code';
 
         const result = await db.query(query, params);
@@ -77,13 +84,13 @@ exports.createCompetency = async (req, res) => {
         } = req.body;
 
         const query = `
-            INSERT INTO competencies (code, name, description, subject_id, category, level)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO competencies (code, name, description, subject_id, category, level, school_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
 
         const result = await db.query(query, [
-            code, name, description, subject_id, category, level
+            code, name, description, subject_id, category, level, req.user.school_id
         ]);
 
         res.status(201).json({

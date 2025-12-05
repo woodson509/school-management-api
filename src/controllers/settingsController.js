@@ -152,6 +152,13 @@ exports.getReportPeriods = async (req, res) => {
             paramCount++;
         }
 
+        // Admin sees only their school's report periods
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
+            query += ` AND (school_id = $${paramCount} OR school_id IS NULL)`;
+            params.push(req.user.school_id);
+            paramCount++;
+        }
+
         query += ' ORDER BY school_year DESC, order_number ASC';
 
         const result = await db.query(query, params);
@@ -179,13 +186,13 @@ exports.createReportPeriod = async (req, res) => {
         const { name, period_type, school_year, start_date, end_date, order_number } = req.body;
 
         const query = `
-            INSERT INTO report_periods (name, period_type, school_year, start_date, end_date, order_number)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO report_periods (name, period_type, school_year, start_date, end_date, order_number, school_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
 
         const result = await db.query(query, [
-            name, period_type, school_year, start_date, end_date, order_number
+            name, period_type, school_year, start_date, end_date, order_number, req.user.school_id
         ]);
 
         res.status(201).json({

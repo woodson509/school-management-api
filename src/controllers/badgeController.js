@@ -7,12 +7,16 @@ const badgeController = {
      */
     getAllBadges: async (req, res) => {
         try {
-            let query = 'SELECT * FROM badges';
+            let query = 'SELECT * FROM badges WHERE 1=1';
             const params = [];
+            let paramCount = 1;
 
-            // Admin sees only their school's badges (if badges have school_id)
-            // For now, badges are global - no school filter needed
-            // If you want per-school badges, add school_id to badges table
+            // Admin and teacher see only their school's badges
+            if (req.user.role === 'admin' || req.user.role === 'teacher') {
+                query += ` AND (school_id = $${paramCount} OR school_id IS NULL)`;
+                params.push(req.user.school_id);
+                paramCount++;
+            }
 
             query += ' ORDER BY created_at DESC';
             const result = await db.query(query, params);
@@ -31,11 +35,11 @@ const badgeController = {
             const { name, description, icon_url, criteria, badge_type } = req.body;
 
             const query = `
-        INSERT INTO badges (name, description, icon_url, criteria, badge_type)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO badges (name, description, icon_url, criteria, badge_type, school_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
       `;
-            const values = [name, description, icon_url, criteria, badge_type];
+            const values = [name, description, icon_url, criteria, badge_type, req.user.school_id];
 
             const result = await db.query(query, values);
             res.status(201).json({ success: true, data: result.rows[0] });

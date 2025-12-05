@@ -581,3 +581,86 @@ exports.addSchoolToClasses = async (req, res) => {
     if (client) client.release();
   }
 };
+
+/**
+ * Add school_id to competencies, badges, and report_periods tables
+ * POST /api/migrations/add-school-to-pedagogy
+ */
+exports.addSchoolToPedagogy = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('🎓 Adding school_id to pedagogy tables...');
+
+    // 1. Add school_id to competencies table
+    await client.query(`
+      ALTER TABLE competencies 
+      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id) ON DELETE CASCADE
+    `);
+    console.log('✅ Added school_id to competencies');
+
+    // 2. Add school_id to badges table
+    await client.query(`
+      ALTER TABLE badges 
+      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id) ON DELETE CASCADE
+    `);
+    console.log('✅ Added school_id to badges');
+
+    // 3. Add school_id to report_periods table
+    await client.query(`
+      ALTER TABLE report_periods 
+      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id) ON DELETE CASCADE
+    `);
+    console.log('✅ Added school_id to report_periods');
+
+    // 4. Create indexes for performance
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_competencies_school ON competencies(school_id);
+      CREATE INDEX IF NOT EXISTS idx_badges_school ON badges(school_id);
+      CREATE INDEX IF NOT EXISTS idx_report_periods_school ON report_periods(school_id);
+    `);
+    console.log('✅ Created indexes');
+
+    // 5. Try to update existing records based on who created them (if created_by exists)
+    try {
+      await client.query(`
+        UPDATE competencies c
+        SET school_id = u.school_id
+        FROM users u
+        WHERE c.school_id IS NULL AND c.created_by = u.id
+      `);
+    } catch (e) {
+      console.log('Note: Could not update competencies - no created_by column');
+    }
+
+    try {
+      await client.query(`
+        UPDATE badges b
+        SET school_id = u.school_id
+        FROM users u
+        WHERE b.school_id IS NULL AND b.created_by = u.id
+      `);
+    } catch (e) {
+      console.log('Note: Could not update badges - no created_by column');
+    }
+
+    console.log('✅ Pedagogy tables updated with school_id');
+
+    res.json({
+      success: true,
+      message: 'School_id added to competencies, badges, and report_periods tables successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
