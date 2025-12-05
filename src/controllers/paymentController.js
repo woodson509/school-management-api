@@ -47,6 +47,13 @@ exports.getStudentFees = async (req, res) => {
             paramCount++;
         }
 
+        // Admin sees only their school's students
+        if (req.user.role === 'admin') {
+            query += ` AND u.school_id = $${paramCount}`;
+            params.push(req.user.school_id);
+            paramCount++;
+        }
+
         query += ' ORDER BY sf.created_at DESC';
 
         const result = await db.query(query, params);
@@ -176,16 +183,26 @@ exports.recordPayment = async (req, res) => {
  */
 exports.getStats = async (req, res) => {
     try {
-        const query = `
+        let query = `
             SELECT 
-                COALESCE(SUM(amount), 0) as total_expected,
-                COALESCE(SUM(paid_amount), 0) as total_received,
-                COUNT(CASE WHEN status = 'pending' OR status = 'partial' THEN 1 END) as pending_count,
-                COUNT(CASE WHEN status = 'overdue' THEN 1 END) as overdue_count
-            FROM student_fees
+                COALESCE(SUM(sf.amount), 0) as total_expected,
+                COALESCE(SUM(sf.paid_amount), 0) as total_received,
+                COUNT(CASE WHEN sf.status = 'pending' OR sf.status = 'partial' THEN 1 END) as pending_count,
+                COUNT(CASE WHEN sf.status = 'overdue' THEN 1 END) as overdue_count
+            FROM student_fees sf
+            JOIN users u ON sf.student_id = u.id
+            WHERE 1=1
         `;
 
-        const result = await db.query(query);
+        const params = [];
+
+        // Admin sees only their school's stats
+        if (req.user.role === 'admin') {
+            query += ` AND u.school_id = $1`;
+            params.push(req.user.school_id);
+        }
+
+        const result = await db.query(query, params);
 
         res.status(200).json({
             success: true,
@@ -362,6 +379,13 @@ exports.getTeacherPayments = async (req, res) => {
         if (year) {
             query += ` AND tp.period_year = $${paramCount}`;
             params.push(year);
+            paramCount++;
+        }
+
+        // Admin sees only their school's teachers
+        if (req.user.role === 'admin') {
+            query += ` AND u.school_id = $${paramCount}`;
+            params.push(req.user.school_id);
             paramCount++;
         }
 

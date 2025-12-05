@@ -7,7 +7,15 @@ const badgeController = {
      */
     getAllBadges: async (req, res) => {
         try {
-            const result = await db.query('SELECT * FROM badges ORDER BY created_at DESC');
+            let query = 'SELECT * FROM badges';
+            const params = [];
+
+            // Admin sees only their school's badges (if badges have school_id)
+            // For now, badges are global - no school filter needed
+            // If you want per-school badges, add school_id to badges table
+
+            query += ' ORDER BY created_at DESC';
+            const result = await db.query(query, params);
             res.json({ success: true, data: result.rows });
         } catch (error) {
             console.error('Error fetching badges:', error);
