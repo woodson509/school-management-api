@@ -484,9 +484,9 @@ exports.seedDemoData = async (req, res) => {
     ];
     for (const c of courses) {
       await client.query(`
-        INSERT INTO courses (title, description, teacher_id, created_at, updated_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
-      `, [c.title, c.desc, teacherIds[c.teacherIdx]]);
+        INSERT INTO courses (title, description, teacher_id, school_id, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+      `, [c.title, c.desc, teacherIds[c.teacherIdx], schoolId]);
     }
 
     // 8. Create Announcements
