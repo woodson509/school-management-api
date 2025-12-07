@@ -791,7 +791,12 @@ router.get(
  * @desc    Update subject
  * @access  Private (Admin, Superadmin)
  */
-validateSubject,
+router.put(
+  '/subjects/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  validateSubject,
   subjectController.updateSubject
 );
 
@@ -807,16 +812,7 @@ router.delete(
   validateUUID('id'),
   subjectController.deleteSubject
 );
- * @desc    Delete subject
-  * @access  Private(Admin, Superadmin)
-    */
-router.delete(
-  '/subjects/:id',
-  authenticate,
-  authorize('admin', 'superadmin'),
-  validateUUID('id'),
-  subjectController.deleteSubject
-);
+
 
 // ============================================
 // ROLE & PERMISSION ROUTES
