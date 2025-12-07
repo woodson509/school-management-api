@@ -791,12 +791,7 @@ router.get(
  * @desc    Update subject
  * @access  Private (Admin, Superadmin)
  */
-router.put(
-  '/subjects/:id',
-  authenticate,
-  authorize('admin', 'superadmin'),
-  validateUUID('id'),
-  validateSubject,
+validateSubject,
   subjectController.updateSubject
 );
 
@@ -805,6 +800,16 @@ router.put(
  * @desc    Delete subject
  * @access  Private (Admin, Superadmin)
  */
+router.delete(
+  '/subjects/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  validateUUID('id'),
+  subjectController.deleteSubject
+);
+ * @desc    Delete subject
+  * @access  Private(Admin, Superadmin)
+    */
 router.delete(
   '/subjects/:id',
   authenticate,
@@ -1618,6 +1623,7 @@ router.post('/migrations/seed-demo', authenticate, authorize('superadmin'), migr
 router.post('/migrations/add-school-to-classes', authenticate, authorize('superadmin'), migrationController.addSchoolToClasses);
 router.post('/migrations/add-school-to-pedagogy', authenticate, authorize('superadmin'), migrationController.addSchoolToPedagogy);
 router.post('/migrations/add-school-to-subjects', authenticate, authorize('superadmin'), migrationController.addSchoolToSubjects);
+router.post('/migrations/user-fields', migrationController.runUserFieldsMigration);
 
 module.exports = router;
 
