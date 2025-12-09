@@ -805,3 +805,42 @@ exports.runUserFieldsMigration = async (req, res) => {
     if (client) client.release();
   }
 };
+
+/**
+ * Add online fields and attachment support to lessons
+ * POST /api/migrations/lesson-online-fields
+ */
+exports.runLessonOnlineMsg = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('💻 Adding online fields to lessons table...');
+
+    // Add meeting_link and is_online columns
+    await client.query(`
+      ALTER TABLE lessons
+      ADD COLUMN IF NOT EXISTS meeting_link TEXT,
+      ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT false;
+    `);
+
+    console.log('✅ Lessons table updated with online fields');
+
+    res.json({
+      success: true,
+      message: 'Lessons table updated with online fields successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
+

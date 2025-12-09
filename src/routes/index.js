@@ -1621,5 +1621,12 @@ router.post('/migrations/add-school-to-pedagogy', authenticate, authorize('super
 router.post('/migrations/add-school-to-subjects', authenticate, authorize('superadmin'), migrationController.addSchoolToSubjects);
 router.post('/migrations/user-fields', migrationController.runUserFieldsMigration);
 
+/**
+ * @route   POST /api/migrations/lesson-online-fields
+ * @desc    Add online fields to lessons
+ * @access  Public (for development/setup)
+ */
+router.post('/migrations/lesson-online-fields', migrationController.runLessonOnlineMsg);
+
 module.exports = router;
 

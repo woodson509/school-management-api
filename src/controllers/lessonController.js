@@ -86,7 +86,8 @@ exports.createLesson = async (req, res) => {
     try {
         const {
             course_id, title, description, content, lesson_order,
-            duration_minutes, video_url, attachments, type, is_published
+            duration_minutes, video_url, attachments, type, is_published,
+            meeting_link, is_online
         } = req.body;
 
         const pool = await db.getPool();
@@ -118,9 +119,10 @@ exports.createLesson = async (req, res) => {
       INSERT INTO lessons (
         course_id, title, description, content, lesson_order,
         duration_minutes, video_url, attachments, type,
-        is_published, published_at, created_by, created_at, updated_at
+        is_published, published_at, created_by, created_at, updated_at,
+        meeting_link, is_online
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW(), $13, $14)
       RETURNING *
     `;
 
@@ -136,7 +138,9 @@ exports.createLesson = async (req, res) => {
             type || 'text',
             is_published || false,
             is_published ? new Date() : null,
-            req.user.id
+            req.user.id,
+            meeting_link || null,
+            is_online || false
         ]);
 
         res.status(201).json({
@@ -193,7 +197,7 @@ exports.updateLesson = async (req, res) => {
 
         const fields = [
             'title', 'description', 'content', 'lesson_order', 'duration_minutes',
-            'video_url', 'type', 'is_published'
+            'video_url', 'type', 'is_published', 'meeting_link', 'is_online'
         ];
 
         fields.forEach(field => {
