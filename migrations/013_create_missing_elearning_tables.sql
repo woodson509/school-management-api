@@ -61,11 +61,14 @@ CREATE INDEX IF NOT EXISTS idx_submissions_assignment ON assignment_submissions(
 CREATE INDEX IF NOT EXISTS idx_submissions_student ON assignment_submissions(student_id);
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_enrollments_updated_at ON enrollments;
 CREATE TRIGGER update_enrollments_updated_at BEFORE UPDATE ON enrollments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_assignments_updated_at ON assignments;
 CREATE TRIGGER update_assignments_updated_at BEFORE UPDATE ON assignments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_submissions_updated_at ON assignment_submissions;
 CREATE TRIGGER update_submissions_updated_at BEFORE UPDATE ON assignment_submissions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
