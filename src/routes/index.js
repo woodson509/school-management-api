@@ -1628,5 +1628,12 @@ router.post('/migrations/user-fields', migrationController.runUserFieldsMigratio
  */
 router.post('/migrations/lesson-online-fields', migrationController.runLessonOnlineMsg);
 
+/**
+ * @route   POST /api/migrations/missing-tables
+ * @desc    Create assignments and enrollments tables
+ * @access  Public (for fix)
+ */
+router.post('/migrations/missing-tables', migrationController.runMissingTablesMigration);
+
 module.exports = router;
 
