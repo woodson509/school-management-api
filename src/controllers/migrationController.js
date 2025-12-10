@@ -844,3 +844,40 @@ exports.runLessonOnlineMsg = async (req, res) => {
   }
 };
 
+/**
+ * Run missing e-learning tables migration
+ * POST /api/migrations/missing-tables
+ */
+exports.runMissingTablesMigration = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    const fs = require('fs');
+    const path = require('path');
+
+    console.log('🏗️ Creating missing e-learning tables...');
+
+    const sql = fs.readFileSync(path.join(__dirname, '../../migrations/013_create_missing_elearning_tables.sql'), 'utf8');
+    await client.query(sql);
+
+    console.log('✅ Tables created successfully');
+
+    res.json({
+      success: true,
+      message: 'Missing tables created successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
+
