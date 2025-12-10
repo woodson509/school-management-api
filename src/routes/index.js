@@ -575,7 +575,7 @@ router.post(
 router.get(
   '/users',
   authenticate,
-  authorize('admin', 'superadmin'),
+  authorize('admin', 'superadmin', 'teacher'),
   userController.getUsers
 );
 

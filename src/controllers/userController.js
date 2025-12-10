@@ -170,8 +170,8 @@ exports.getUsers = async (req, res) => {
         const params = [];
         let paramIndex = 1;
 
-        // Enforce school isolation for admins
-        if (req.user.role === 'admin') {
+        // Enforce school isolation for admins and teachers
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
             query += ` AND u.school_id = $${paramIndex}`;
             params.push(req.user.school_id);
             paramIndex++;
@@ -199,7 +199,7 @@ exports.getUsers = async (req, res) => {
         const countParams = [];
         let countIndex = 1;
 
-        if (req.user.role === 'admin') {
+        if (req.user.role === 'admin' || req.user.role === 'teacher') {
             countQuery += ` AND u.school_id = $${countIndex}`;
             countParams.push(req.user.school_id);
             countIndex++;
