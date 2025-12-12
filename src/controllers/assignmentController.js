@@ -119,12 +119,13 @@ const assignmentController = {
     create: async (req, res) => {
         try {
             const { course_id, title, description, due_date, points, type, is_published } = req.body;
+            const created_by = req.user.id; // Get creator from authenticated user
             const pool = await db.getPool();
 
             const result = await pool.query(
                 `INSERT INTO assignments (
-          course_id, title, description, due_date, points, type, is_published, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) 
+          course_id, title, description, due_date, points, type, is_published, created_by, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
         RETURNING *`,
                 [
                     course_id,
@@ -133,7 +134,8 @@ const assignmentController = {
                     due_date,
                     points || 100,
                     type || 'homework',
-                    is_published || false
+                    is_published || false,
+                    created_by
                 ]
             );
 
