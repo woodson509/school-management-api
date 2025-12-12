@@ -162,6 +162,18 @@ router.get(
 );
 
 /**
+ * @route   POST /api/assignments
+ * @desc    Create a new assignment
+ * @access  Private (Teacher, Admin)
+ */
+router.post(
+  '/assignments',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  assignmentController.create
+);
+
+/**
  * @route   GET /api/courses/:courseId/assignments
  * @desc    Get assignments by course
  * @access  Private
