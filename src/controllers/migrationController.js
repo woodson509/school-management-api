@@ -932,4 +932,72 @@ exports.runLinkCoursesToSubjects = async (req, res) => {
   }
 };
 
+/**
+ * Run migration to fix assignments table schema
+ * POST /api/migrations/fix-assignments
+ */
+exports.runFixAssignmentsSchema = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('🔧 Fixing assignments table schema...');
+
+    // Add missing columns to assignments table
+    const sql = `
+      DO $$
+      BEGIN
+          -- Add 'points' column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                         WHERE table_name = 'assignments' AND column_name = 'points') THEN
+              ALTER TABLE assignments ADD COLUMN points INTEGER DEFAULT 100;
+          END IF;
+
+          -- Add 'type' column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                         WHERE table_name = 'assignments' AND column_name = 'type') THEN
+              ALTER TABLE assignments ADD COLUMN type VARCHAR(50) DEFAULT 'homework';
+          END IF;
+
+          -- Add 'is_published' column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                         WHERE table_name = 'assignments' AND column_name = 'is_published') THEN
+              ALTER TABLE assignments ADD COLUMN is_published BOOLEAN DEFAULT false;
+          END IF;
+
+          -- Add 'created_at' column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                         WHERE table_name = 'assignments' AND column_name = 'created_at') THEN
+              ALTER TABLE assignments ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
+          END IF;
+
+          -- Add 'updated_at' column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                         WHERE table_name = 'assignments' AND column_name = 'updated_at') THEN
+              ALTER TABLE assignments ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
+          END IF;
+      END $$;
+    `;
+
+    await client.query(sql);
+
+    console.log('✅ Assignments table schema fixed successfully');
+
+    res.json({
+      success: true,
+      message: 'Assignments table schema fixed successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
 

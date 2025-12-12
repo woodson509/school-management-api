@@ -1665,5 +1665,12 @@ router.post('/migrations/missing-tables', migrationController.runMissingTablesMi
  */
 router.post('/migrations/link-courses-subjects', migrationController.runLinkCoursesToSubjects);
 
+/**
+ * @route   POST /api/migrations/fix-assignments
+ * @desc    Add missing columns to assignments table
+ * @access  Public (for fix)
+ */
+router.post('/migrations/fix-assignments', migrationController.runFixAssignmentsSchema);
+
 module.exports = router;
 

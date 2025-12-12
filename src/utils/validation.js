@@ -96,6 +96,10 @@ const validateCourse = [
     .optional()
     .isUUID()
     .withMessage('Teacher ID must be a valid UUID'),
+  body('subject_id')
+    .optional()
+    .isUUID()
+    .withMessage('Valid subject ID is required'),
   handleValidationErrors
 ];
 
