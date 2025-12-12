@@ -151,6 +151,17 @@ router.delete(
 // ============================================
 
 /**
+ * @route   GET /api/assignments
+ * @desc    Get all assignments (filtered by user role)
+ * @access  Private
+ */
+router.get(
+  '/assignments',
+  authenticate,
+  assignmentController.getAll
+);
+
+/**
  * @route   GET /api/courses/:courseId/assignments
  * @desc    Get assignments by course
  * @access  Private

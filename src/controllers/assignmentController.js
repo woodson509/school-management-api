@@ -1,6 +1,61 @@
 const db = require('../config/database');
 
 const assignmentController = {
+    // Get all assignments (filtered by role)
+    getAll: async (req, res) => {
+        try {
+            const { id, role, school_id } = req.user;
+            const pool = await db.getPool();
+            let query = '';
+            let params = [];
+
+            if (role === 'teacher') {
+                query = `
+                    SELECT a.*, c.title as course_title, c.code as course_code, c.class_id, cl.name as class_name
+                    FROM assignments a
+                    JOIN courses c ON a.course_id = c.id
+                    LEFT JOIN classes cl ON c.class_id = cl.id
+                    WHERE c.teacher_id = $1
+                    ORDER BY a.due_date ASC
+                `;
+                params = [id];
+            } else if (role === 'student') {
+                query = `
+                    SELECT a.*, c.title as course_title, c.code as course_code
+                    FROM assignments a
+                    JOIN courses c ON a.course_id = c.id
+                    JOIN enrollments e ON c.id = e.course_id
+                    WHERE e.student_id = $1
+                    ORDER BY a.due_date ASC
+                `;
+                params = [id];
+            } else if (role === 'admin' || role === 'superadmin') {
+                query = `
+                    SELECT a.*, c.title as course_title, c.code as course_code, cl.name as class_name
+                    FROM assignments a
+                    JOIN courses c ON a.course_id = c.id
+                    LEFT JOIN classes cl ON c.class_id = cl.id
+                    WHERE c.school_id = $1
+                    ORDER BY a.due_date ASC
+                `;
+                params = [school_id];
+            }
+
+            const result = await pool.query(query, params);
+
+            res.json({
+                success: true,
+                data: result.rows
+            });
+        } catch (error) {
+            console.error('Error fetching all assignments:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to fetch assignments',
+                error: error.message
+            });
+        }
+    },
     // Get assignments by course
     getByCourse: async (req, res) => {
         try {
