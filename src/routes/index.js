@@ -1672,5 +1672,12 @@ router.post('/migrations/link-courses-subjects', migrationController.runLinkCour
  */
 router.post('/migrations/fix-assignments', migrationController.runFixAssignmentsSchema);
 
+/**
+ * @route   POST /api/migrations/attendance-constraint
+ * @desc    Add unique constraint to attendance table
+ * @access  Public (for fix)
+ */
+router.post('/migrations/attendance-constraint', migrationController.runAttendanceConstraint);
+
 module.exports = router;
 

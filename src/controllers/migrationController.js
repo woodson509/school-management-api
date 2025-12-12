@@ -1001,3 +1001,50 @@ exports.runFixAssignmentsSchema = async (req, res) => {
   }
 };
 
+/**
+ * Run migration to add unique constraint to attendance table
+ * POST /api/migrations/attendance-constraint
+ */
+exports.runAttendanceConstraint = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    console.log('🔧 Adding unique constraint to attendance table...');
+
+    const sql = `
+      DO $$
+      BEGIN
+          IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint 
+              WHERE conname = 'attendance_student_date_class_unique'
+          ) THEN
+              ALTER TABLE attendance 
+              ADD CONSTRAINT attendance_student_date_class_unique 
+              UNIQUE (student_id, date, class_id);
+          END IF;
+      END $$;
+    `;
+
+    await client.query(sql);
+
+    console.log('✅ Attendance unique constraint added successfully');
+
+    res.json({
+      success: true,
+      message: 'Attendance unique constraint added successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
+
