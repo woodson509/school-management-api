@@ -1002,7 +1002,7 @@ exports.runFixAssignmentsSchema = async (req, res) => {
 };
 
 /**
- * Run migration to add unique constraint to attendance table
+ * Run migration to fix attendance table schema
  * POST /api/migrations/attendance-constraint
  */
 exports.runAttendanceConstraint = async (req, res) => {
@@ -1011,9 +1011,24 @@ exports.runAttendanceConstraint = async (req, res) => {
     const pool = await db.getPool();
     client = await pool.connect();
 
-    console.log('🔧 Adding unique constraint to attendance table...');
+    console.log('🔧 Fixing attendance table schema...');
 
-    const sql = `
+    // 1. Make course_id nullable if it exists and is NOT NULL
+    const sql1 = `
+      DO $$
+      BEGIN
+          -- Check if course_id column exists and make it nullable
+          IF EXISTS (
+              SELECT 1 FROM information_schema.columns 
+              WHERE table_name = 'attendance' AND column_name = 'course_id'
+          ) THEN
+              ALTER TABLE attendance ALTER COLUMN course_id DROP NOT NULL;
+          END IF;
+      END $$;
+    `;
+
+    // 2. Add unique constraint if it doesn't exist
+    const sql2 = `
       DO $$
       BEGIN
           IF NOT EXISTS (
@@ -1027,13 +1042,14 @@ exports.runAttendanceConstraint = async (req, res) => {
       END $$;
     `;
 
-    await client.query(sql);
+    await client.query(sql1);
+    await client.query(sql2);
 
-    console.log('✅ Attendance unique constraint added successfully');
+    console.log('✅ Attendance table schema fixed successfully');
 
     res.json({
       success: true,
-      message: 'Attendance unique constraint added successfully'
+      message: 'Attendance table schema fixed: course_id made nullable, unique constraint added'
     });
 
   } catch (error) {
