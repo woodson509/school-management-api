@@ -49,7 +49,7 @@ app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'School Management API',
-    version: '1.0.0',
+    version: '1.0.1',
     endpoints: {
       health: '/api/health',
       documentation: '/api/docs',
