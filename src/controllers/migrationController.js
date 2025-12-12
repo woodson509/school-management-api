@@ -881,3 +881,55 @@ exports.runMissingTablesMigration = async (req, res) => {
   }
 };
 
+/**
+ * Run migration to link courses to subjects
+ * POST /api/migrations/link-courses-subjects
+ */
+exports.runLinkCoursesToSubjects = async (req, res) => {
+  let client;
+  try {
+    const pool = await db.getPool();
+    client = await pool.connect();
+
+    const fs = require('fs');
+    const path = require('path');
+
+    console.log('🔗 Linking courses to subjects...');
+
+    // Check if file exists, if not use inline SQL
+    const migrationPath = path.join(__dirname, '../../migrations/014_add_subject_id_to_courses.sql');
+    let sql;
+
+    if (fs.existsSync(migrationPath)) {
+      sql = fs.readFileSync(migrationPath, 'utf8');
+    } else {
+      sql = `
+        ALTER TABLE courses 
+        ADD COLUMN IF NOT EXISTS subject_id UUID REFERENCES subjects(id) ON DELETE SET NULL;
+        
+        CREATE INDEX IF NOT EXISTS idx_courses_subject_id ON courses(subject_id);
+        `;
+    }
+
+    await client.query(sql);
+
+    console.log('✅ Courses linked to subjects successfully');
+
+    res.json({
+      success: true,
+      message: 'Migration completed successfully'
+    });
+
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  } finally {
+    if (client) client.release();
+  }
+};
+
+

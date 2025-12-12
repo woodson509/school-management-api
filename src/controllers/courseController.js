@@ -12,7 +12,7 @@ const db = require('../config/database');
  */
 const createCourse = async (req, res) => {
   try {
-    const { title, description, code, credits, school_id, teacher_id, class_id } = req.body;
+    const { title, description, code, credits, school_id, teacher_id, class_id, subject_id } = req.body;
 
     // Authorization check
     if (req.user.role === 'teacher') {
@@ -83,10 +83,10 @@ const createCourse = async (req, res) => {
 
     // Create course
     const result = await db.query(
-      `INSERT INTO courses (school_id, teacher_id, class_id, title, description, code, credits)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO courses (school_id, teacher_id, class_id, subject_id, title, description, code, credits)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [school_id, teacher_id || null, class_id || null, title, description || null, code, credits || 0]
+      [school_id, teacher_id || null, class_id || null, subject_id || null, title, description || null, code, credits || 0]
     );
 
     const course = result.rows[0];
@@ -116,11 +116,12 @@ const getCourses = async (req, res) => {
     const { school_id, teacher_id, is_active } = req.query;
 
     let query = `
-      SELECT c.*, u.full_name as teacher_name, s.name as school_name, cl.name as class_name
+      SELECT c.*, u.full_name as teacher_name, s.name as school_name, cl.name as class_name, subj.name as subject_name
       FROM courses c
       LEFT JOIN users u ON c.teacher_id = u.id
       LEFT JOIN schools s ON c.school_id = s.id
       LEFT JOIN classes cl ON c.class_id = cl.id
+      LEFT JOIN subjects subj ON c.subject_id = subj.id
       WHERE 1=1
     `;
     const params = [];
@@ -188,11 +189,12 @@ const getCourseById = async (req, res) => {
     const { id } = req.params;
 
     const result = await db.query(
-      `SELECT c.*, u.full_name as teacher_name, s.name as school_name, cl.name as class_name
+      `SELECT c.*, u.full_name as teacher_name, s.name as school_name, cl.name as class_name, subj.name as subject_name
        FROM courses c
        LEFT JOIN users u ON c.teacher_id = u.id
        LEFT JOIN schools s ON c.school_id = s.id
        LEFT JOIN classes cl ON c.class_id = cl.id
+       LEFT JOIN subjects subj ON c.subject_id = subj.id
        WHERE c.id = $1`,
       [id]
     );
@@ -237,141 +239,147 @@ const getCourseById = async (req, res) => {
  */
 const updateCourse = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, description, code, credits, teacher_id, class_id, is_active } = req.body;
+    try {
+      const { id } = req.params;
+      const { title, description, code, credits, teacher_id, class_id, subject_id, is_active } = req.body;
 
-    // Check if course exists
-    const courseCheck = await db.query(
-      'SELECT * FROM courses WHERE id = $1',
-      [id]
-    );
+      // Check if course exists
+      const courseCheck = await db.query(
+        'SELECT * FROM courses WHERE id = $1',
+        [id]
+      );
 
-    if (courseCheck.rows.length === 0) {
-      return res.status(404).json({
+      if (courseCheck.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Course not found'
+        });
+      }
+
+      const course = courseCheck.rows[0];
+
+      // Authorization check
+      if (req.user.role === 'teacher' && course.teacher_id !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only update your own courses'
+        });
+      }
+
+      // Build update query dynamically
+      const updates = [];
+      const params = [];
+      let paramCount = 1;
+
+      if (title !== undefined) {
+        updates.push(`title = $${paramCount}`);
+        params.push(title);
+        paramCount++;
+      }
+      if (description !== undefined) {
+        updates.push(`description = $${paramCount}`);
+        params.push(description);
+        paramCount++;
+      }
+      if (code !== undefined) {
+        updates.push(`code = $${paramCount}`);
+        params.push(code);
+        paramCount++;
+      }
+      if (credits !== undefined) {
+        updates.push(`credits = $${paramCount}`);
+        params.push(credits);
+        paramCount++;
+      }
+      if (teacher_id !== undefined) {
+        updates.push(`teacher_id = $${paramCount}`);
+        params.push(teacher_id);
+        paramCount++;
+      }
+      if (class_id !== undefined) {
+        updates.push(`class_id = $${paramCount}`);
+        params.push(class_id);
+        paramCount++;
+      }
+      if (subject_id !== undefined) {
+        updates.push(`subject_id = $${paramCount}`);
+        params.push(subject_id);
+        paramCount++;
+      }
+      if (is_active !== undefined) {
+        updates.push(`is_active = $${paramCount}`);
+        params.push(is_active);
+        paramCount++;
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No fields to update'
+        });
+      }
+
+      params.push(id);
+      const query = `UPDATE courses SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+
+      const result = await db.query(query, params);
+
+      res.status(200).json({
+        success: true,
+        message: 'Course updated successfully',
+        data: result.rows[0]
+      });
+
+    } catch (error) {
+      console.error('Update course error:', error);
+      res.status(500).json({
         success: false,
-        message: 'Course not found'
+        message: 'Failed to update course',
+        error: error.message
       });
     }
+  };
 
-    const course = courseCheck.rows[0];
+  /**
+   * Delete course
+   * DELETE /api/courses/:id
+   * Access: Admin only
+   */
+  const deleteCourse = async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    // Authorization check
-    if (req.user.role === 'teacher' && course.teacher_id !== req.user.id) {
-      return res.status(403).json({
+      const result = await db.query(
+        'DELETE FROM courses WHERE id = $1 RETURNING id',
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Course not found'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Course deleted successfully'
+      });
+
+    } catch (error) {
+      console.error('Delete course error:', error);
+      res.status(500).json({
         success: false,
-        message: 'You can only update your own courses'
+        message: 'Failed to delete course',
+        error: error.message
       });
     }
+  };
 
-    // Build update query dynamically
-    const updates = [];
-    const params = [];
-    let paramCount = 1;
-
-    if (title !== undefined) {
-      updates.push(`title = $${paramCount}`);
-      params.push(title);
-      paramCount++;
-    }
-    if (description !== undefined) {
-      updates.push(`description = $${paramCount}`);
-      params.push(description);
-      paramCount++;
-    }
-    if (code !== undefined) {
-      updates.push(`code = $${paramCount}`);
-      params.push(code);
-      paramCount++;
-    }
-    if (credits !== undefined) {
-      updates.push(`credits = $${paramCount}`);
-      params.push(credits);
-      paramCount++;
-    }
-    if (teacher_id !== undefined) {
-      updates.push(`teacher_id = $${paramCount}`);
-      params.push(teacher_id);
-      paramCount++;
-    }
-    if (class_id !== undefined) {
-      updates.push(`class_id = $${paramCount}`);
-      params.push(class_id);
-      paramCount++;
-    }
-    if (is_active !== undefined) {
-      updates.push(`is_active = $${paramCount}`);
-      params.push(is_active);
-      paramCount++;
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No fields to update'
-      });
-    }
-
-    params.push(id);
-    const query = `UPDATE courses SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await db.query(query, params);
-
-    res.status(200).json({
-      success: true,
-      message: 'Course updated successfully',
-      data: result.rows[0]
-    });
-
-  } catch (error) {
-    console.error('Update course error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update course',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Delete course
- * DELETE /api/courses/:id
- * Access: Admin only
- */
-const deleteCourse = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const result = await db.query(
-      'DELETE FROM courses WHERE id = $1 RETURNING id',
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Course not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Course deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Delete course error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete course',
-      error: error.message
-    });
-  }
-};
-
-module.exports = {
-  createCourse,
-  getCourses,
-  getCourseById,
-  updateCourse,
-  deleteCourse
-};
+  module.exports = {
+    createCourse,
+    getCourses,
+    getCourseById,
+    updateCourse,
+    deleteCourse
+  };

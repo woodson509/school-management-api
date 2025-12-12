@@ -1635,5 +1635,12 @@ router.post('/migrations/lesson-online-fields', migrationController.runLessonOnl
  */
 router.post('/migrations/missing-tables', migrationController.runMissingTablesMigration);
 
+/**
+ * @route   POST /api/migrations/link-courses-subjects
+ * @desc    Add subject_id to courses
+ * @access  Public (for update)
+ */
+router.post('/migrations/link-courses-subjects', migrationController.runLinkCoursesToSubjects);
+
 module.exports = router;
 
