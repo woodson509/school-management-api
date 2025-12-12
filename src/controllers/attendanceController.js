@@ -127,6 +127,7 @@ const attendanceController = {
 
     // Save attendance (Bulk upsert)
     saveAttendance: async (req, res) => {
+        let client;
         try {
             const { class_id, date, records } = req.body; // records: [{ student_id, status, notes }]
 
@@ -137,11 +138,14 @@ const attendanceController = {
                 });
             }
 
-            // We'll use a transaction
-            await db.query('BEGIN');
+            // Get a dedicated client for the transaction
+            const pool = await db.getPool();
+            client = await pool.connect();
+
+            await client.query('BEGIN');
 
             for (const record of records) {
-                await db.query(`
+                await client.query(`
           INSERT INTO attendance (class_id, student_id, date, status, notes)
           VALUES ($1, $2, $3, $4, $5)
           ON CONFLICT (student_id, date, class_id)
@@ -152,19 +156,22 @@ const attendanceController = {
         `, [class_id, record.student_id, date, record.status, record.notes || '']);
             }
 
-            await db.query('COMMIT');
+            await client.query('COMMIT');
 
             res.json({
                 success: true,
                 message: 'Attendance saved successfully'
             });
         } catch (error) {
-            await db.query('ROLLBACK');
+            if (client) await client.query('ROLLBACK');
             console.error('Error saving attendance:', error);
             res.status(500).json({
                 success: false,
-                message: 'Error saving attendance'
+                message: 'Error saving attendance',
+                error: error.message
             });
+        } finally {
+            if (client) client.release();
         }
     }
 };
