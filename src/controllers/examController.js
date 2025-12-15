@@ -95,9 +95,13 @@ const getExams = async (req, res) => {
 
     let query = `
       SELECT e.*, c.title as course_title, c.code as course_code,
+             cl.name as class_name,
+             s.name as subject_name,
              u.full_name as created_by_name
       FROM exams e
       JOIN courses c ON e.course_id = c.id
+      LEFT JOIN classes cl ON c.class_id = cl.id
+      LEFT JOIN subjects s ON c.subject_id = s.id
       JOIN users u ON e.created_by = u.id
       WHERE 1=1
     `;
@@ -168,9 +172,12 @@ const getExamById = async (req, res) => {
 
     const result = await db.query(
       `SELECT e.*, c.title as course_title, c.code as course_code, c.school_id,
+              cl.name as class_name, s.name as subject_name,
               u.full_name as created_by_name
        FROM exams e
        JOIN courses c ON e.course_id = c.id
+       LEFT JOIN classes cl ON c.class_id = cl.id
+       LEFT JOIN subjects s ON c.subject_id = s.id
        JOIN users u ON e.created_by = u.id
        WHERE e.id = $1`,
       [id]
