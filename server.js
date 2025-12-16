@@ -160,6 +160,13 @@ const initializeServer = async () => {
             UPDATE courses 
             SET subject_id = (SELECT id FROM subjects WHERE name ILIKE '%Math%' LIMIT 1)
             WHERE id = '94482bd0-543e-4c73-b2b2-a9ce78ef7833' AND subject_id IS NULL;
+
+            -- DATA PATCH: Ensure report periods exist
+            INSERT INTO report_periods (name, period_type, school_year, start_date, end_date, is_active, order_number) VALUES
+            ('Trimestre 1', 'trimester', '2024-2025', '2024-09-01', '2024-12-31', true, 1),
+            ('Trimestre 2', 'trimester', '2024-2025', '2025-01-01', '2025-03-31', false, 2),
+            ('Trimestre 3', 'trimester', '2024-2025', '2025-04-01', '2025-06-30', false, 3)
+            ON CONFLICT DO NOTHING;
         `);
       console.log('✓ Critical migrations and DATA PATCH applied');
     } catch (err) {
