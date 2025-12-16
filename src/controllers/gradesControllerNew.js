@@ -66,7 +66,15 @@ exports.getGrades = async (req, res) => {
 
         query += ' ORDER BY g.created_at DESC';
 
+        console.log(`[DEBUG] getGrades Query: ${query}`);
+        console.log(`[DEBUG] getGrades Params:`, params);
+
         const result = await db.query(query, params);
+
+        console.log(`[DEBUG] getGrades Rows Found: ${result.rows.length}`);
+        if (result.rows.length > 0) {
+            console.log(`[DEBUG] First Grade:`, result.rows[0]);
+        }
 
         res.status(200).json({
             success: true,
