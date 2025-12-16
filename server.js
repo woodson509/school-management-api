@@ -41,6 +41,24 @@ app.use((req, res, next) => {
 // ROUTES
 // ============================================
 
+// DEBUG ROUTE - TO BE REMOVED
+// Must be defined BEFORE /api routes to avoid 404 handler issues if placed improperly
+app.get('/api/debug/dump-grades', async (req, res) => {
+  try {
+    const client = await db.getClient();
+    const result = await client.query(`
+            SELECT id, student_id, exam_id, subject_id, class_id, value, created_at, recorded_by
+            FROM grades 
+            ORDER BY created_at DESC 
+            LIMIT 50
+        `);
+    client.release();
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API routes
 app.use('/api', routes);
 
