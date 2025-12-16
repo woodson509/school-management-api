@@ -19,7 +19,9 @@ const createExam = async (req, res) => {
       duration_minutes,
       total_marks,
       passing_marks,
-      exam_date
+      passing_marks,
+      exam_date,
+      type
     } = req.body;
 
     // Verify course exists
@@ -53,7 +55,9 @@ const createExam = async (req, res) => {
         course_id, created_by, title, description,
         duration_minutes, total_marks, passing_marks, exam_date
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        duration_minutes, total_marks, passing_marks, exam_date, type
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         course_id,
@@ -63,7 +67,9 @@ const createExam = async (req, res) => {
         duration_minutes,
         total_marks,
         passing_marks,
-        exam_date || null
+        passing_marks,
+        exam_date || null,
+        type || 'written'
       ]
     );
 
@@ -94,7 +100,7 @@ const getExams = async (req, res) => {
     const { course_id, is_published } = req.query;
 
     let query = `
-      SELECT e.*, c.title as course_title, c.code as course_code,
+      SELECT e.*, c.title as course_title, c.code as course_code, c.subject_id, c.subject_id as c_subject_id,
              cl.name as class_name,
              s.name as subject_name,
              u.full_name as created_by_name
@@ -144,11 +150,24 @@ const getExams = async (req, res) => {
 
     query += ' ORDER BY e.created_at DESC';
 
+    console.log(`[DEBUG] Executing Exam Query: ${query}`);
+    console.log(`[DEBUG] Params: ${JSON.stringify(params)}`);
+
     const result = await db.query(query, params);
+
+    if (result.rows.length > 0) {
+      console.log('[DEBUG] First exam result sample:', JSON.stringify(result.rows[0]));
+    }
+
+    // Post-processing to ensure subject_id is present
+    const processedRows = result.rows.map(row => ({
+      ...row,
+      subject_id: row.subject_id || row.c_subject_id || null // Fallback
+    }));
 
     res.status(200).json({
       success: true,
-      data: result.rows,
+      data: processedRows,
       count: result.rows.length
     });
 
