@@ -169,12 +169,31 @@ const initializeServer = async () => {
             SET subject_id = (SELECT id FROM subjects WHERE code = 'DEFAULT' LIMIT 1)
             WHERE subject_id IS NULL;
 
-            -- DATA PATCH: Ensure report periods exist
+            -- SCHEME FIX: Add exam_id to grades
+            ALTER TABLE grades 
+            ADD COLUMN IF NOT EXISTS exam_id UUID REFERENCES exams(id) ON DELETE SET NULL;
+            
+            CREATE INDEX IF NOT EXISTS idx_grades_exam_id ON grades(exam_id);
+
+            -- DATA CLEANUP: Remove DUPLICATE report periods (Keep newest per name/year)
+            DELETE FROM report_periods a USING report_periods b 
+            WHERE a.id < b.id 
+              AND a.name = b.name 
+              AND a.school_year = b.school_year;
+            
+            -- CONSTRAINT: Prevent future duplicate periods
+            ALTER TABLE report_periods 
+            DROP CONSTRAINT IF EXISTS uq_report_periods_name_year;
+            
+            ALTER TABLE report_periods 
+            ADD CONSTRAINT uq_report_periods_name_year UNIQUE (name, school_year);
+
+            -- DATA PATCH: Ensure report periods exist (Safe insert now with constraint)
             INSERT INTO report_periods (name, period_type, school_year, start_date, end_date, is_active, order_number) VALUES
             ('Trimestre 1', 'trimester', '2024-2025', '2024-09-01', '2024-12-31', true, 1),
             ('Trimestre 2', 'trimester', '2024-2025', '2025-01-01', '2025-03-31', false, 2),
             ('Trimestre 3', 'trimester', '2024-2025', '2025-04-01', '2025-06-30', false, 3)
-            ON CONFLICT DO NOTHING;
+            ON CONFLICT (name, school_year) DO NOTHING;
         `);
       console.log('✓ Critical migrations and DATA PATCH applied');
     } catch (err) {
