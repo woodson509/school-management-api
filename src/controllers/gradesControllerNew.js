@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Grades Controller
  * Manages student grades and average calculations
  */
