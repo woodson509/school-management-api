@@ -206,6 +206,23 @@ const initializeServer = async () => {
       console.warn('Warning during critical setup:', err.message);
     }
 
+    // DEBUG ROUTE - TO BE REMOVED
+    app.get('/api/debug/dump-grades', async (req, res) => {
+      try {
+        const client = await db.getClient();
+        const result = await client.query(`
+                SELECT id, student_id, exam_id, subject_id, class_id, value, created_at, recorded_by
+                FROM grades 
+                ORDER BY created_at DESC 
+                LIMIT 50
+            `);
+        client.release();
+        res.json(result.rows);
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
     // Start server
     app.listen(PORT, () => {
       console.log('\n' + '='.repeat(50));
