@@ -40,7 +40,7 @@ exports.getGrades = async (req, res) => {
             paramCount++;
         }
 
-        if (subject_id) {
+        if (subject_id && !exam_id) {
             query += ` AND g.subject_id = $${paramCount}`;
             params.push(subject_id);
             paramCount++;
@@ -52,7 +52,7 @@ exports.getGrades = async (req, res) => {
             paramCount++;
         }
 
-        if (report_period_id) {
+        if (report_period_id && !exam_id) {
             query += ` AND g.report_period_id = $${paramCount}`;
             params.push(report_period_id);
             paramCount++;
