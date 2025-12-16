@@ -513,23 +513,31 @@ exports.saveGradesBulk = async (req, res) => {
             results.push(result.rows[0]);
         }
 
+    }
+
         await client.query('COMMIT');
 
-        res.status(200).json({
-            success: true,
-            message: 'Grades saved successfully',
-            data: results
-        });
+    console.log(`[DEBUG] Bulk save successful. Saved ${results.length} grades.`);
 
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Error batch saving grades:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error saving grades',
-            error: error.message
-        });
-    } finally {
-        client.release();
-    }
+    res.status(200).json({
+        success: true,
+        message: 'Grades saved successfully',
+        data: results
+    });
+
+} catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error batch saving grades:', error);
+    console.error('First grade payload sample:', req.body.grades?.[0]);
+    console.error('User ID:', req.user?.id);
+
+    res.status(500).json({
+        success: false,
+        message: 'Error saving grades',
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+} finally {
+    client.release();
+}
 };
