@@ -164,9 +164,10 @@ const initializeServer = async () => {
             -- NUCLEAR OPTION: If still null, create default subject and link to it
             INSERT INTO subjects (name, code) VALUES ('Matière Par Défaut', 'DEFAULT') ON CONFLICT (code) DO NOTHING;
             
+            -- CATCH-ALL: Force link ALL remaining orphaned courses to the default subject
             UPDATE courses 
             SET subject_id = (SELECT id FROM subjects WHERE code = 'DEFAULT' LIMIT 1)
-            WHERE id = '94482bd0-543e-4c73-b2b2-a9ce78ef7833' AND subject_id IS NULL;
+            WHERE subject_id IS NULL;
 
             -- DATA PATCH: Ensure report periods exist
             INSERT INTO report_periods (name, period_type, school_year, start_date, end_date, is_active, order_number) VALUES
