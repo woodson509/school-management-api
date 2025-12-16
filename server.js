@@ -139,6 +139,20 @@ const initializeServer = async () => {
     await db.query('SELECT NOW()');
     console.log('✓ Database connection verified');
 
+    // Run critical setup/migrations
+    try {
+      console.log('Running critical setup...');
+      await db.query(`
+            ALTER TABLE courses 
+            ADD COLUMN IF NOT EXISTS subject_id UUID REFERENCES subjects(id) ON DELETE SET NULL;
+            
+            CREATE INDEX IF NOT EXISTS idx_courses_subject_id ON courses(subject_id);
+        `);
+      console.log('✓ Critical migrations applied');
+    } catch (err) {
+      console.warn('Warning during critical setup:', err.message);
+    }
+
     // Start server
     app.listen(PORT, () => {
       console.log('\n' + '='.repeat(50));
