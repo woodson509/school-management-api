@@ -19,7 +19,6 @@ const createExam = async (req, res) => {
       duration_minutes,
       total_marks,
       passing_marks,
-      passing_marks,
       exam_date,
       type
     } = req.body;
