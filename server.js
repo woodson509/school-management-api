@@ -175,6 +175,12 @@ const initializeServer = async () => {
             
             CREATE INDEX IF NOT EXISTS idx_grades_exam_id ON grades(exam_id);
 
+            -- SCHEME FIX: Add school_id to subjects (was missing)
+            ALTER TABLE subjects 
+            ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id) ON DELETE CASCADE;
+            
+            CREATE INDEX IF NOT EXISTS idx_subjects_school_id ON subjects(school_id);
+
             -- DATA CLEANUP: Remove DUPLICATE report periods (Keep newest per name/year)
             DELETE FROM report_periods a USING report_periods b 
             WHERE a.id < b.id 
