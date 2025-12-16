@@ -156,7 +156,7 @@ exports.createUser = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const pool = await db.getPool();
-        const { page = 1, limit = 10, role, search } = req.query;
+        const { page = 1, limit = 10, role, search, class_id } = req.query;
         const offset = (page - 1) * limit;
 
         let query = `
@@ -189,6 +189,12 @@ exports.getUsers = async (req, res) => {
             paramIndex++;
         }
 
+        if (class_id) {
+            query += ` AND u.class_id = $${paramIndex}`;
+            params.push(class_id);
+            paramIndex++;
+        }
+
         query += ` ORDER BY u.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
         params.push(limit, offset);
 
@@ -214,6 +220,12 @@ exports.getUsers = async (req, res) => {
         if (search) {
             countQuery += ` AND (u.full_name ILIKE $${countIndex} OR u.email ILIKE $${countIndex} OR u.student_id_number ILIKE $${countIndex} OR u.employee_id ILIKE $${countIndex})`;
             countParams.push(`%${search}%`);
+            countIndex++;
+        }
+
+        if (class_id) {
+            countQuery += ` AND u.class_id = $${countIndex}`;
+            countParams.push(class_id);
             countIndex++;
         }
 

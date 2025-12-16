@@ -1432,6 +1432,18 @@ router.get(
 );
 
 /**
+ * @route   POST /api/grades/bulk
+ * @desc    Bulk create or update grades
+ * @access  Private (Teacher, Admin)
+ */
+router.post(
+  '/grades/bulk',
+  authenticate,
+  authorize('teacher', 'admin', 'superadmin'),
+  gradesController.saveGradesBulk
+);
+
+/**
  * @route   POST /api/grades
  * @desc    Create a new grade
  * @access  Private (Teacher, Admin)
