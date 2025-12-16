@@ -23,9 +23,10 @@ exports.getGrades = async (req, res) => {
                 recorder.full_name as recorded_by_name
             FROM grades g
             JOIN users u ON g.student_id = u.id
-            JOIN subjects s ON g.subject_id = s.id
-            JOIN classes c ON g.class_id = c.id
-            JOIN report_periods rp ON g.report_period_id = rp.id
+            JOIN users u ON g.student_id = u.id
+            LEFT JOIN subjects s ON g.subject_id = s.id
+            LEFT JOIN classes c ON g.class_id = c.id
+            LEFT JOIN report_periods rp ON g.report_period_id = rp.id
             LEFT JOIN users recorder ON g.recorded_by = recorder.id
             WHERE 1=1
         `;
