@@ -22,7 +22,7 @@ exports.getGrades = async (req, res) => {
                 rp.name as period_name,
                 recorder.full_name as recorded_by_name
             FROM grades g
-            JOIN users u ON g.student_id = u.id
+            LEFT JOIN users u ON g.student_id = u.id
             JOIN users u ON g.student_id = u.id
             LEFT JOIN subjects s ON g.subject_id = s.id
             LEFT JOIN classes c ON g.class_id = c.id
@@ -46,7 +46,7 @@ exports.getGrades = async (req, res) => {
             paramCount++;
         }
 
-        if (class_id) {
+        if (class_id && !exam_id) {
             query += ` AND g.class_id = $${paramCount}`;
             params.push(class_id);
             paramCount++;
