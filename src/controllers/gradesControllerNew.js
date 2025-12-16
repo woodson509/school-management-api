@@ -421,7 +421,7 @@ exports.calculateOverallAverage = async (req, res) => {
  * @access Private (Teacher, Admin)
  */
 exports.saveGradesBulk = async (req, res) => {
-    const client = await db.pool.connect();
+    const client = await db.getClient();
     try {
         await client.query('BEGIN');
 
