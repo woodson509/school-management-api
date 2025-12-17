@@ -64,7 +64,7 @@ app.get('/api/debug/dump-grades', async (req, res) => {
   try {
     const client = await db.getClient();
     const result = await client.query(`
-            SELECT id, student_id, exam_id, subject_id, class_id, value, created_at, recorded_by
+            SELECT *
             FROM grades 
             ORDER BY created_at DESC 
             LIMIT 50
