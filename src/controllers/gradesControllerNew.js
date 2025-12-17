@@ -33,33 +33,41 @@ exports.getGrades = async (req, res) => {
         const params = [];
         let paramCount = 1;
 
+        // PRIORITY PATH: If exam_id is present, return everything for this exam
+        if (exam_id) {
+            const cleanExamId = exam_id.trim();
+            console.log(`[DEBUG] Fetching grades for Exam ID: ${cleanExamId}`);
+
+            query = `
+                SELECT 
+                    g.*,
+                    u.full_name as student_name,
+                    s.name as subject_name,
+                    c.name as class_name,
+                    rp.name as period_name,
+                    recorder.full_name as recorded_by_name
+                FROM grades g
+                LEFT JOIN users u ON g.student_id = u.id
+                LEFT JOIN subjects s ON g.subject_id = s.id
+                LEFT JOIN classes c ON g.class_id = c.id
+                LEFT JOIN report_periods rp ON g.report_period_id = rp.id
+                LEFT JOIN users recorder ON g.recorded_by = recorder.id
+                WHERE g.exam_id = $1
+                ORDER BY g.created_at DESC
+            `;
+
+            const result = await db.query(query, [cleanExamId]);
+
+            return res.status(200).json({
+                success: true,
+                data: result.rows
+            });
+        }
+
+        // STANDARD PATH (Filter based)
         if (student_id) {
             query += ` AND g.student_id = $${paramCount}`;
             params.push(student_id);
-            paramCount++;
-        }
-
-        if (subject_id && !exam_id) {
-            query += ` AND g.subject_id = $${paramCount}`;
-            params.push(subject_id);
-            paramCount++;
-        }
-
-        if (class_id && !exam_id) {
-            query += ` AND g.class_id = $${paramCount}`;
-            params.push(class_id);
-            paramCount++;
-        }
-
-        if (report_period_id && !exam_id) {
-            query += ` AND g.report_period_id = $${paramCount}`;
-            params.push(report_period_id);
-            paramCount++;
-        }
-
-        if (exam_id) {
-            query += ` AND g.exam_id = $${paramCount}`;
-            params.push(exam_id);
             paramCount++;
         }
 
