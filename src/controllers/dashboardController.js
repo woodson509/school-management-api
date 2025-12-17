@@ -481,7 +481,7 @@ const getStudentDashboard = async (req, res) => {
     const coursesStatsQuery = `
     SELECT
     COUNT(*) as total_enrolled,
-      COUNT(CASE WHEN c.status = 'active' THEN 1 END) as active_courses,
+      COUNT(CASE WHEN e.status = 'active' THEN 1 END) as active_courses,
       COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_courses
       FROM enrollments e
       JOIN courses c ON e.course_id = c.id
