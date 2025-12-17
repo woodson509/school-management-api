@@ -76,6 +76,14 @@ app.get('/api/debug/dump-grades', async (req, res) => {
   }
 });
 
+app.get('/api/debug/version', (req, res) => {
+  res.json({
+    version: 'v2-debug-injection',
+    timestamp: new Date().toISOString(),
+    controller: 'gradesControllerNew'
+  });
+});
+
 // API routes
 app.use('/api', routes);
 
