@@ -219,6 +219,35 @@ const initializeServer = async () => {
     try {
       console.log('Running critical setup...');
       await db.query(`
+            -- ENSURE EXAMS TABLES EXIST
+            CREATE TABLE IF NOT EXISTS exams (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                start_date TIMESTAMP,
+                end_date TIMESTAMP,
+                duration_minutes INTEGER,
+                total_points INTEGER DEFAULT 20,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            );
+
+            CREATE TABLE IF NOT EXISTS exam_attempts (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+                student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                score DECIMAL(5, 2),
+                status VARCHAR(50) DEFAULT 'in_progress',
+                submitted_at TIMESTAMP,
+                graded_at TIMESTAMP,
+                graded BOOLEAN DEFAULT false,
+                feedback TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(exam_id, student_id)
+            );
+
             ALTER TABLE courses 
             ADD COLUMN IF NOT EXISTS subject_id UUID REFERENCES subjects(id) ON DELETE SET NULL;
             
