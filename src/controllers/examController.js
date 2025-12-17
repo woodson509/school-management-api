@@ -98,6 +98,42 @@ const getExams = async (req, res) => {
   try {
     const { course_id, is_published } = req.query;
 
+    // STUDENT: specialized query to show enrolled exams + status
+    if (req.user.role === 'student') {
+      const studentQuery = `
+        SELECT 
+            e.id, 
+            e.title, 
+            e.description, 
+            e.type,
+            COALESCE(e.start_date, e.exam_date) as exam_date,
+            e.duration_minutes,
+            COALESCE(e.total_points, e.total_marks) as total_points,
+            c.title as course_title,
+            s.name as subject_name,
+            ea.status as attempt_status,
+            ea.score,
+            ea.submitted_at,
+            ea.completed_at
+        FROM exams e
+        JOIN courses c ON e.course_id = c.id
+        LEFT JOIN subjects s ON c.subject_id = s.id
+        JOIN enrollments en ON c.id = en.course_id
+        LEFT JOIN exam_attempts ea ON e.id = ea.exam_id AND ea.student_id = $1
+        WHERE en.student_id = $1
+          AND (e.is_published = true OR e.is_published IS NULL) -- Handle older schemas
+        ORDER BY exam_date ASC
+      `;
+
+      const result = await db.query(studentQuery, [req.user.id]);
+
+      return res.status(200).json({
+        success: true,
+        data: result.rows,
+        count: result.rows.length
+      });
+    }
+
     let query = `
       SELECT e.*, c.title as course_title, c.code as course_code, c.subject_id, c.subject_id as c_subject_id,
              cl.name as class_name,
