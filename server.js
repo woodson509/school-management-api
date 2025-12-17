@@ -84,6 +84,39 @@ app.get('/api/debug/version', (req, res) => {
   });
 });
 
+// DEBUG: Test grades query directly (NO AUTH)
+app.get('/api/debug/test-grades', async (req, res) => {
+  try {
+    const exam_id = req.query.exam_id;
+    if (!exam_id) {
+      return res.json({ error: 'exam_id required', received: req.query });
+    }
+
+    const cleanExamId = exam_id.trim();
+
+    const query = `
+      SELECT 
+        g.*,
+        u.full_name as student_name
+      FROM grades g
+      LEFT JOIN users u ON g.student_id = u.id
+      WHERE g.exam_id = $1
+      ORDER BY g.created_at DESC
+    `;
+
+    const result = await db.query(query, [cleanExamId]);
+
+    res.json({
+      received_exam_id: cleanExamId,
+      exam_id_length: cleanExamId.length,
+      rows_found: result.rows.length,
+      data: result.rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
 // API routes
 app.use('/api', routes);
 
