@@ -58,9 +58,19 @@ exports.getGrades = async (req, res) => {
 
             const result = await db.query(query, [cleanExamId]);
 
+            let finalRows = result.rows;
+            if (finalRows.length === 0) {
+                finalRows = [{
+                    id: 'debug-123',
+                    student_id: '00000000-0000-0000-0000-000000000000', // Dummy UUID
+                    value: 0,
+                    notes: `DEBUG: DB Pool found 0 rows for ID '${cleanExamId}' (Len:${cleanExamId.length}). Dump saw it.`
+                }];
+            }
+
             return res.status(200).json({
                 success: true,
-                data: result.rows
+                data: finalRows
             });
         }
 
