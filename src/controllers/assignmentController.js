@@ -21,10 +21,20 @@ const assignmentController = {
                 params = [id];
             } else if (role === 'student') {
                 query = `
-                    SELECT a.*, c.title as course_title, c.code as course_code
+                    SELECT 
+                        a.*, 
+                        c.title as course_title, 
+                        c.code as course_code,
+                        s.status as submission_status,
+                        s.grade,
+                        s.feedback,
+                        s.submitted_at,
+                        u.full_name as teacher_name
                     FROM assignments a
                     JOIN courses c ON a.course_id = c.id
+                    JOIN users u ON c.teacher_id = u.id
                     JOIN enrollments e ON c.id = e.course_id
+                    LEFT JOIN assignment_submissions s ON a.id = s.assignment_id AND s.student_id = $1
                     WHERE e.student_id = $1
                     ORDER BY a.due_date ASC
                 `;
