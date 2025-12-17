@@ -248,6 +248,22 @@ const initializeServer = async () => {
                 UNIQUE(exam_id, student_id)
             );
 
+            -- ENSURE COLUMNS EXIST (Patch for existing tables)
+            ALTER TABLE exams 
+            ADD COLUMN IF NOT EXISTS start_date TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS end_date TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS duration_minutes INTEGER,
+            ADD COLUMN IF NOT EXISTS total_points INTEGER DEFAULT 20,
+            ADD COLUMN IF NOT EXISTS description TEXT;
+
+            ALTER TABLE exam_attempts
+            ADD COLUMN IF NOT EXISTS score DECIMAL(5, 2),
+            ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'in_progress',
+            ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS graded_at TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS graded BOOLEAN DEFAULT false,
+            ADD COLUMN IF NOT EXISTS feedback TEXT;
+
             ALTER TABLE courses 
             ADD COLUMN IF NOT EXISTS subject_id UUID REFERENCES subjects(id) ON DELETE SET NULL;
             
