@@ -36,7 +36,16 @@ exports.getSchedules = async (req, res) => {
 
         const params = [];
 
-        if (class_id) {
+        if (req.user.role === 'student') {
+            // Get student's class
+            const studentRes = await db.query('SELECT class_id FROM users WHERE id = $1', [req.user.id]);
+            if (studentRes.rows.length > 0 && studentRes.rows[0].class_id) {
+                query += ' AND s.class_id = $1';
+                params.push(studentRes.rows[0].class_id);
+            } else {
+                return res.status(200).json({ success: true, data: [] }); // No class assigned
+            }
+        } else if (class_id) {
             query += ' AND s.class_id = $1';
             params.push(class_id);
         }
