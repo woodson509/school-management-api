@@ -115,6 +115,52 @@ const getCourses = async (req, res) => {
   try {
     const { school_id, teacher_id, is_active } = req.query;
 
+    // STUDENT: specialized query to show enrolled courses
+    if (req.user.role === 'student') {
+      const studentQuery = `
+        SELECT 
+            c.id, c.title, c.code, c.description,
+            u.full_name as teacher, -- Frontend uses 'teacher'
+            s.name as school_name,
+            cl.name as class_name,
+            subj.name as subject_name,
+            
+            -- Progress metrics (basic implementation)
+            (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.id) as lessons,
+            0 as "completedLessons", -- Quote for camelCase alias
+            0 as progress,
+            'in_progress' as status,
+            '#3B82F6' as color -- Default color
+        FROM courses c
+        JOIN enrollments e ON c.id = e.course_id
+        LEFT JOIN users u ON c.teacher_id = u.id
+        LEFT JOIN schools s ON c.school_id = s.id
+        LEFT JOIN classes cl ON c.class_id = cl.id
+        LEFT JOIN subjects subj ON c.subject_id = subj.id
+        WHERE e.student_id = $1
+        ORDER BY c.title ASC
+      `;
+
+      const result = await db.query(studentQuery, [req.user.id]);
+
+      // Assign random colors in JS or fix color
+      const colors = ['#3B82F6', '#8B5CF6', '#EF4444', '#F59E0B', '#EC4899', '#10B981', '#6366F1', '#14B8A6'];
+
+      const mappedData = result.rows.map((row, index) => ({
+        ...row,
+        color: colors[index % colors.length], // consistent color by index
+        lessons: parseInt(row.lessons || 0),
+        completedLessons: 0,
+        progress: 0
+      }));
+
+      return res.status(200).json({
+        success: true,
+        data: mappedData,
+        count: mappedData.length
+      });
+    }
+
     let query = `
       SELECT c.*, u.full_name as teacher_name, s.name as school_name, cl.name as class_name, subj.name as subject_name
       FROM courses c
