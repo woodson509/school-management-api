@@ -70,7 +70,12 @@ exports.getGrades = async (req, res) => {
 
             return res.status(200).json({
                 success: true,
-                data: finalRows
+                data: finalRows,
+                _debug: {
+                    path: 'PRIORITY',
+                    received_exam_id: cleanExamId,
+                    rows_before_injection: result.rows.length
+                }
             });
         }
 
@@ -93,9 +98,26 @@ exports.getGrades = async (req, res) => {
             console.log(`[DEBUG] First Grade:`, result.rows[0]);
         }
 
+        // ALWAYS include debug info in response
+        let finalData = result.rows;
+        if (finalData.length === 0) {
+            finalData = [{
+                id: 'debug-standard-path',
+                student_id: '00000000-0000-0000-0000-000000000000',
+                value: 0,
+                notes: `STANDARD_PATH: exam_id was '${exam_id}' (truthy: ${!!exam_id}). Query: ${query.substring(0, 100)}...`
+            }];
+        }
+
         res.status(200).json({
             success: true,
-            data: result.rows
+            data: finalData,
+            _debug: {
+                path: 'STANDARD',
+                received_query: req.query,
+                exam_id_received: exam_id,
+                exam_id_truthy: !!exam_id
+            }
         });
     } catch (error) {
         console.error('Error fetching grades:', error);
