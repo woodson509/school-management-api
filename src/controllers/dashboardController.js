@@ -302,10 +302,9 @@ const getAdminDashboard = async (req, res) => {
           students: parseInt(usersCount.students)
         },
         courses_stats: {
-          total_courses: parseInt(coursesStats.total_courses),
-          active_courses: parseInt(coursesStats.active_courses),
-          draft: parseInt(coursesStats.draft_courses),
-          archived: parseInt(coursesStats.archived_courses)
+          total_courses: parseInt(coursesStats.total_courses || 0),
+          active_courses: parseInt(coursesStats.active_courses || 0),
+          inactive_courses: parseInt(coursesStats.inactive_courses || 0)
         },
         exams_stats: {
           total_exams: parseInt(examsStats.total_exams || 0),
